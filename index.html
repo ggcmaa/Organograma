@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organograma Avançado - Gente e Gestão</title>
+    <title>Organograma Horizontal - Gente e Gestão</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -32,10 +32,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        /* Padrão Vertical */
         .tf-tree ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
         .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 10px 0 10px; }
-        
-        /* Conectores Limpos */
         .tf-tree li::before, .tf-tree li::after {
             content: ''; position: absolute; top: 0; right: 50%;
             border-top: 2px solid #cbd5e1; width: 50%; height: 24px;
@@ -51,30 +51,37 @@
             border-left: 2px solid #cbd5e1; width: 0; height: 24px;
         }
 
-        /* Orientação Horizontal */
-        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 28px; }
-        .orientation-horizontal li { text-align: left; padding: 10px 0 0 28px; }
-        .orientation-horizontal li::before, .orientation-horizontal li::after, .orientation-horizontal ul ul::before { display: none; }
-
-        /* Grade Compacta para Liderados */
-        .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 900px; margin: 0 auto; padding-top: 16px; }
+        /* Modo Horizontal (Esquerda para Direita) */
+        .tf-tree.horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 40px; }
+        .tf-tree.horizontal li { text-align: left; padding: 12px 0 0 40px; }
+        .tf-tree.horizontal li::before, .tf-tree.horizontal li::after {
+            top: 50% !important; right: auto !important; left: 0 !important;
+            border-top: 2px solid #cbd5e1 !important; border-left: none !important;
+            width: 40px !important; height: 50% !important;
+        }
+        .tf-tree.horizontal li::after { top: 0 !important; height: 50% !important; border-top: none !important; border-left: 2px solid #cbd5e1 !important; }
+        .tf-tree.horizontal li:only-child::before { display: block !important; height: 2px !important; top: 50% !important; }
+        .tf-tree.horizontal li:only-child::after { display: none !important; }
+        .tf-tree.horizontal li:only-child { padding-top: 0; padding-left: 40px; }
+        .tf-tree.horizontal li:first-child::before { border-top: 2px solid #cbd5e1 !important; border-left: none !important; border-radius: 0 !important; }
+        .tf-tree.horizontal li:first-child::after { display: none !important; }
+        .tf-tree.horizontal li:last-child::before { border-top: none !important; border-right: none !important; border-radius: 0 !important; }
+        .tf-tree.horizontal li:last-child::after { border-left: 2px solid #cbd5e1 !important; border-bottom: 2px solid #cbd5e1 !important; border-top: none !important; border-right: none !important; border-radius: 0 0 0 8px !important; }
+        .tf-tree.horizontal li:first-child:last-child::after { display: none !important; }
+        .tf-tree.horizontal ul ul::before {
+            top: 0 !important; left: 0 !important; height: 100% !important; width: 0 !important;
+            border-left: 2px solid #cbd5e1 !important; border-top: none !important;
+        }
 
         #viewport { cursor: grab; }
         #viewport:active { cursor: grabbing; }
 
-        /* Cores de Nível Dinâmicas */
         .lvl-badge-1 { background-color: #0d9488; color: white; }
         .lvl-ring-1 { border-color: #0d9488; }
-        
         .lvl-badge-2 { background-color: #16a34a; color: white; }
         .lvl-ring-2 { border-color: #16a34a; }
-        
         .lvl-badge-3 { background-color: #d97706; color: white; }
         .lvl-ring-3 { border-color: #d97706; }
-        
-        .lvl-badge-4 { background-color: #2563eb; color: white; }
-        .lvl-ring-4 { border-color: #2563eb; }
-
         .lvl-badge-default { background-color: #64748b; color: white; }
         .lvl-ring-default { border-color: #64748b; }
     </style>
@@ -103,16 +110,10 @@
                     oninput="filterTree()">
             </div>
 
-            <!-- Formato do Layout -->
-            <select id="layoutFormat" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
-                <option value="tree">Árvore Expandida</option>
-                <option value="compact">Grade Compacta (Imagem Única)</option>
-            </select>
-
-            <!-- Orientação -->
+            <!-- Orientação (Vertical / Horizontal Esquerda-Direita) -->
             <select id="orientationSelect" onchange="changeOrientation()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
-                <option value="vertical">Vertical</option>
-                <option value="horizontal">Horizontal</option>
+                <option value="horizontal">Horizontal (Esq ➔ Dir)</option>
+                <option value="vertical">Vertical (Cima ➔ Baixo)</option>
             </select>
 
             <!-- Ordenação -->
@@ -128,8 +129,8 @@
                 <option value="all">Todos Níveis</option>
             </select>
 
-            <!-- Alternar Tema -->
-            <button onclick="toggleTheme()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 p-1.5 rounded-lg text-slate-600 transition" title="Alternar Tema Claro/Escuro">
+            <!-- Tema Claro/Escuro -->
+            <button onclick="toggleTheme()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 p-1.5 rounded-lg text-slate-600 transition" title="Alternar Tema">
                 <i data-lucide="sun" id="theme-icon" class="w-4 h-4"></i>
             </button>
 
@@ -162,8 +163,8 @@
 
     <!-- Área Principal -->
     <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
-        <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
-            <div id="tree-root" class="tf-tree">
+        <div id="pan-container" class="absolute inset-0 flex items-center justify-start p-12 transition-transform duration-100 ease-out">
+            <div id="tree-root" class="tf-tree horizontal">
                 <div class="text-center mt-20 text-slate-400">
                     <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
                     <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
@@ -275,7 +276,6 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const maxLevel = document.getElementById('levelFilter').value;
             const sortBy = document.getElementById('sortBy').value;
-            const layoutFormat = document.getElementById('layoutFormat').value;
 
             const map = {};
             globalData.forEach(row => {
@@ -348,91 +348,52 @@
                 roots = matchedNode ? [matchedNode] : [];
             }
 
-            renderTree(roots, layoutFormat);
+            renderTree(roots);
         }
 
-        // Renderização do Cartão Pill (Inspirado no Design do Mockup)
-        function renderPillCard(node) {
+        function renderCard(node) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-12 h-12 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-12 h-12 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-6 h-6"></i></div>`;
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
+                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
 
             return `
                 <div class="relative inline-flex items-center ${cardBg} border rounded-full pl-2 pr-5 py-2 shadow-md w-64 hover:shadow-xl transition-all">
-                    <!-- Badge de Nível na Lateral -->
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
                         LEVEL ${String.fromCharCode(64 + node.level)}
                     </span>
-                    
                     ${fotoHTML}
-                    
                     <div class="ml-3 text-left overflow-hidden">
                         <h3 class="text-xs font-bold truncate leading-tight">${node.nome}</h3>
                         <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium">${node.cargo}</p>
                         <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-400 font-mono">
                             <span>#${node.numcad}</span>
                             <span>•</span>
-                            <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect}</span>
+                            <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>
                         </div>
                     </div>
                 </div>`;
         }
 
-        // Renderização do Círculo Compacto (Base do Diagrama da Imagem)
-        function renderCircleCard(node) {
-            const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
-            const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
-
-            const hasFoto = node.foto && node.foto.length > 5;
-            const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${ringClass} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
-                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
-
-            const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
-
-            return `
-                <div class="inline-flex flex-col items-center w-20 text-center group" title="${node.nome} - ${node.cargo}">
-                    <div class="relative">
-                        ${fotoHTML}
-                    </div>
-                    <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block">${node.nome.split(' ')[0]}</span>
-                    <span class="text-[8px] text-slate-400 truncate w-full block">${node.cargo}</span>
-                </div>`;
-        }
-
-        function renderNodeHTML(node, layoutFormat) {
-            // Se for folha sem filhos e no modo compacto, desenha o avatar circular compacto
-            const isLeaf = node.children.length === 0;
-            const useCircle = layoutFormat === 'compact' && isLeaf;
-
-            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node)}`;
-
+        function renderNodeHTML(node) {
+            let html = `<li>${renderCard(node)}`;
             if (node.children.length > 0) {
-                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
-                    html += `<div class="grid-compact">`;
-                    node.children.forEach(child => {
-                        html += `<div>${renderCircleCard(child)}</div>`;
-                    });
-                    html += `</div>`;
-                } else {
-                    html += '<ul>';
-                    node.children.forEach(child => {
-                        html += renderNodeHTML(child, layoutFormat);
-                    });
-                    html += '</ul>';
-                }
+                html += '<ul>';
+                node.children.forEach(child => {
+                    html += renderNodeHTML(child);
+                });
+                html += '</ul>';
             }
             html += '</li>';
             return html;
         }
 
-        function renderTree(roots, layoutFormat) {
+        function renderTree(roots) {
             const container = document.getElementById('tree-root');
             if (roots.length === 0) {
                 container.innerHTML = `<p class="text-red-500 text-sm text-center mt-10">Nenhum registro encontrado com os filtros selecionados.</p>`;
@@ -441,7 +402,7 @@
 
             let html = '<ul>';
             roots.forEach(root => {
-                html += renderNodeHTML(root, layoutFormat);
+                html += renderNodeHTML(root);
             });
             html += '</ul>';
 
@@ -458,9 +419,9 @@
             const orientation = document.getElementById('orientationSelect').value;
             const treeRoot = document.getElementById('tree-root');
             if (orientation === 'horizontal') {
-                treeRoot.classList.add('orientation-horizontal');
+                treeRoot.classList.add('horizontal');
             } else {
-                treeRoot.classList.remove('orientation-horizontal');
+                treeRoot.classList.remove('horizontal');
             }
         }
 
@@ -470,7 +431,7 @@
             const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
             html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'organograma-executivo.png';
+                link.download = 'organograma-horizontal.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             });
@@ -498,7 +459,7 @@
                     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pageHeight;
                 }
-                pdf.save('organograma-executivo.pdf');
+                pdf.save('organograma-horizontal.pdf');
             });
         }
 
@@ -512,7 +473,7 @@
                 let slide = pptx.addSlide();
                 slide.background = { color: bg };
                 slide.addImage({ data: imgData, x: 0.5, y: 0.5, w: '90%', h: '85%' });
-                pptx.writeFile({ fileName: 'organograma-executivo.pptx' });
+                pptx.writeFile({ fileName: 'organograma-horizontal.pptx' });
             });
         }
 
