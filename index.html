@@ -23,8 +23,11 @@
             }
         }
     </script>
-    <!-- PapaParse para ler CSV -->
+    <!-- Bibliotecas de Apoio (PapaParse, html2canvas, jsPDF, PptxGenJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -45,6 +48,10 @@
             content: ''; position: absolute; top: 0; left: 50%;
             border-left: 2px solid #334155; width: 0; height: 24px;
         }
+        
+        /* Estilo Grade Compacta */
+        .grid-layout { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding-top: 16px; }
+
         #viewport { cursor: grab; }
         #viewport:active { cursor: grabbing; }
     </style>
@@ -63,42 +70,64 @@
             </div>
         </div>
 
-        <!-- Controles de Filtros e Pesquisa -->
-        <div class="flex items-center gap-3 flex-1 max-w-2xl justify-end">
-            <!-- Pesquisa por Nome / Matrícula -->
-            <div class="relative flex-1 max-w-xs">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="searchInput" placeholder="Pesquisar colaborador..." 
-                    class="w-full bg-cmaa-bg border border-cmaa-border rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+        <!-- Controles, Filtros e Exportação -->
+        <div class="flex items-center gap-2.5 flex-wrap justify-end">
+            <!-- Pesquisa -->
+            <div class="relative w-44">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="searchInput" placeholder="Pesquisar..." 
+                    class="w-full bg-cmaa-bg border border-cmaa-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
                     oninput="filterTree()">
             </div>
 
+            <!-- Formato de Visualização -->
+            <select id="layoutFormat" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                <option value="tree">Árvore Tradicional</option>
+                <option value="grid">Grade Compacta (Liderados)</option>
+            </select>
+
+            <!-- Ordenação -->
+            <select id="sortBy" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                <option value="default">Ordem Padrão</option>
+                <option value="name">Nome (A-Z)</option>
+                <option value="hc">Maior Headcount</option>
+                <option value="id">Matrícula</option>
+            </select>
+
             <!-- Filtro de Nível -->
-            <div class="flex items-center gap-1.5 shrink-0">
-                <span class="text-xs text-slate-400">Nível Max:</span>
-                <select id="levelFilter" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
-                    <option value="all">Todos</option>
-                </select>
+            <select id="levelFilter" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                <option value="all">Todos os Níveis</option>
+            </select>
+
+            <!-- Menu Dropdown Exportar -->
+            <div class="relative group">
+                <button class="bg-slate-800 hover:bg-slate-700 border border-cmaa-border text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar
+                </button>
+                <div class="absolute right-0 mt-1 w-36 bg-cmaa-card border border-cmaa-border rounded-lg shadow-xl hidden group-hover:block z-50 overflow-hidden">
+                    <button onclick="exportPDF()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
+                    <button onclick="exportImage()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="image" class="w-3.5 h-3.5"></i> Imagem (PNG)</button>
+                    <button onclick="exportPPT()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="presentation" class="w-3.5 h-3.5"></i> PowerPoint</button>
+                </div>
             </div>
 
             <!-- Importar CSV -->
-            <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-950/40 shrink-0">
-                <i data-lucide="upload" class="w-4 h-4"></i>
-                CSV
+            <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> CSV
                 <input type="file" id="csvFileInput" accept=".csv" class="hidden">
             </label>
 
             <!-- Zoom -->
-            <div class="flex items-center bg-cmaa-bg border border-cmaa-border rounded-lg p-1 gap-1 shrink-0">
-                <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Reduzir"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
-                <button onclick="resetZoom()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Resetar"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
-                <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Aumentar"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+            <div class="flex items-center bg-cmaa-bg border border-cmaa-border rounded-lg p-0.5 gap-0.5">
+                <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Reduzir"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
+                <button onclick="resetZoom()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Resetar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+                <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Aumentar"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
             </div>
         </div>
     </header>
 
     <!-- Área Principal -->
-    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full">
+    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-cmaa-bg">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
             <div id="tree-root" class="tf-tree">
                 <div class="text-center mt-20 text-slate-500">
@@ -146,7 +175,6 @@
                 };
             });
 
-            // Atribuir níveis e calcular HC Direto e Indireto
             const roots = [];
             Object.values(map).forEach(node => {
                 if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
@@ -170,7 +198,6 @@
 
             roots.forEach(root => calculateMetrics(root, 1));
             
-            // Popular select de níveis
             let maxDepth = 0;
             function findMaxDepth(node) {
                 if (node.level > maxDepth) maxDepth = node.level;
@@ -184,13 +211,15 @@
                 levelSelect.innerHTML += `<option value="${i}">Até o Nível ${i}</option>`;
             }
 
-            renderTree(roots);
+            filterTree();
         }
 
         function filterTree() {
             if (globalData.length === 0) return;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const maxLevel = document.getElementById('levelFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const layoutFormat = document.getElementById('layoutFormat').value;
 
             const map = {};
             globalData.forEach(row => {
@@ -230,7 +259,19 @@
             }
             roots.forEach(root => calculateMetrics(root, 1));
 
-            // Filtrar por nível
+            // Ordenação
+            function sortNodes(nodes) {
+                nodes.sort((a, b) => {
+                    if (sortBy === 'name') return a.nome.localeCompare(b.nome);
+                    if (sortBy === 'hc') return b.hcIndirect - a.hcIndirect;
+                    if (sortBy === 'id') return a.numcad.localeCompare(b.numcad);
+                    return 0;
+                });
+                nodes.forEach(n => sortNodes(n.children));
+            }
+            sortNodes(roots);
+
+            // Filtro de Nível
             function applyLevelFilter(nodes, limit) {
                 return nodes.filter(node => {
                     if (limit !== 'all' && node.level > parseInt(limit)) return false;
@@ -238,11 +279,9 @@
                     return true;
                 });
             }
-            if (maxLevel !== 'all') {
-                roots = applyLevelFilter(roots, maxLevel);
-            }
+            if (maxLevel !== 'all') roots = applyLevelFilter(roots, maxLevel);
 
-            // Filtrar por busca de nome/matrícula
+            // Busca
             if (searchTerm) {
                 let matchedNode = null;
                 Object.values(map).forEach(n => {
@@ -250,23 +289,19 @@
                         matchedNode = n;
                     }
                 });
-                if (matchedNode) {
-                    roots = [matchedNode];
-                } else {
-                    roots = [];
-                }
+                roots = matchedNode ? [matchedNode] : [];
             }
 
-            renderTree(roots);
+            renderTree(roots, layoutFormat);
         }
 
-        function renderNodeHTML(node) {
+        function renderCard(node) {
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/50 shadow shrink-0" alt="">`
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/50 shadow shrink-0" crossorigin="anonymous">`
                 : `<div class="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
-            let html = `<li>
+            return `
                 <div class="inline-block bg-cmaa-card border border-cmaa-border hover:border-emerald-500/60 transition-all rounded-xl p-3 w-60 text-left shadow-lg relative">
                     <div class="flex items-center gap-3">
                         ${fotoHTML}
@@ -276,29 +311,39 @@
                             <p class="text-[10px] text-slate-400 truncate mt-0.5">${node.cargo}</p>
                         </div>
                     </div>
-                    <!-- HeadCount Badge -->
                     <div class="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
                         <span>CC: <strong class="text-slate-300">${node.cc}</strong></span>
                         <div class="flex gap-2">
-                            <span title="Headcount Direto" class="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400 font-mono">Dir: ${node.hcDirect}</span>
-                            <span title="Headcount Indireto" class="bg-slate-800 px-1.5 py-0.5 rounded text-cyan-400 font-mono">Ind: ${node.hcIndirect}</span>
+                            <span class="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400 font-mono">Dir: ${node.hcDirect}</span>
+                            <span class="bg-slate-800 px-1.5 py-0.5 rounded text-cyan-400 font-mono">Ind: ${node.hcIndirect}</span>
                         </div>
                     </div>
                 </div>`;
+        }
+
+        function renderNodeHTML(node, layoutFormat) {
+            let html = `<li>${renderCard(node)}`;
 
             if (node.children.length > 0) {
-                html += '<ul>';
-                node.children.forEach(child => {
-                    html += renderNodeHTML(child);
-                });
-                html += '</ul>';
+                if (layoutFormat === 'grid') {
+                    html += `<div class="grid-layout">`;
+                    node.children.forEach(child => {
+                        html += `<div>${renderCard(child)}</div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += '<ul>';
+                    node.children.forEach(child => {
+                        html += renderNodeHTML(child, layoutFormat);
+                    });
+                    html += '</ul>';
+                }
             }
-
             html += '</li>';
             return html;
         }
 
-        function renderTree(roots) {
+        function renderTree(roots, layoutFormat) {
             const container = document.getElementById('tree-root');
             if (roots.length === 0) {
                 container.innerHTML = `<p class="text-red-400 text-sm text-center mt-10">Nenhum registo encontrado com os filtros aplicados.</p>`;
@@ -307,7 +352,7 @@
 
             let html = '<ul>';
             roots.forEach(root => {
-                html += renderNodeHTML(root);
+                html += renderNodeHTML(root, layoutFormat);
             });
             html += '</ul>';
 
@@ -315,7 +360,56 @@
             lucide.createIcons();
         }
 
-        // Funções de Zoom & Pan
+        // Funções de Exportação
+        function exportImage() {
+            const target = document.getElementById('pan-container');
+            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'organograma-cmaa.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        function exportPDF() {
+            const target = document.getElementById('pan-container');
+            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                const imgWidth = 297;
+                const pageHeight = 210;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                pdf.save('organograma-cmaa.pdf');
+            });
+        }
+
+        function exportPPT() {
+            const target = document.getElementById('pan-container');
+            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                let pptx = new PptxGenJS();
+                pptx.layout = 'LAYOUT_16x9';
+                let slide = pptx.addSlide();
+                slide.background = { color: '0B0F17' };
+                slide.addImage({ data: imgData, x: 0.5, y: 0.5, w: '90%', h: '85%' });
+                pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
+            });
+        }
+
+        // Zoom & Pan
         function updateTransform() {
             panContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
         }
@@ -323,14 +417,8 @@
         function zoomOut() { zoomLevel = Math.max(zoomLevel - 0.15, 0.3); updateTransform(); }
         function resetZoom() { zoomLevel = 1; translateX = 0; translateY = 0; updateTransform(); }
 
-        viewport.addEventListener('mousedown', (e) => {
-            isPanning = true; startX = e.clientX - translateX; startY = e.clientY - translateY;
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            translateX = e.clientX - startX; translateY = e.clientY - startY;
-            updateTransform();
-        });
+        viewport.addEventListener('mousedown', (e) => { isPanning = true; startX = e.clientX - translateX; startY = e.clientY - translateY; });
+        window.addEventListener('mousemove', (e) => { if (!isPanning) return; translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); });
         window.addEventListener('mouseup', () => { isPanning = false; });
     </script>
 </body>
