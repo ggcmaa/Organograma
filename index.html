@@ -23,7 +23,7 @@
             }
         }
     </script>
-    <!-- Bibliotecas de Apoio (PapaParse, html2canvas, jsPDF, PptxGenJS) -->
+    <!-- Bibliotecas de Apoio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -32,27 +32,42 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
-        .tf-tree ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
-        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 12px 0 12px; }
         
-        .tf-tree li::before, .tf-tree li::after {
+        /* Layout Vertical */
+        .layout-vertical ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
+        .layout-vertical li { text-align: center; list-style-type: none; position: relative; padding: 24px 12px 0 12px; }
+        .layout-vertical li::before, .layout-vertical li::after {
             content: ''; position: absolute; top: 0; right: 50%;
             border-top: 2px solid #cbd5e1; width: 50%; height: 24px;
         }
-        .tf-tree li::after { right: auto; left: 50%; border-left: 2px solid #cbd5e1; }
-        .tf-tree li:only-child::after, .tf-tree li:only-child::before { display: none; }
-        .tf-tree li:only-child { padding-top: 0; }
-        .tf-tree li:first-child::before, .tf-tree li:last-child::after { border: 0 none; }
-        .tf-tree li:last-child::before { border-right: 2px solid #cbd5e1; border-radius: 0 8px 0 0; }
-        .tf-tree li:first-child::after { border-radius: 8px 0 0 0; }
-        .tf-tree ul ul::before {
+        .layout-vertical li::after { right: auto; left: 50%; border-left: 2px solid #cbd5e1; }
+        .layout-vertical li:only-child::after, .layout-vertical li:only-child::before { display: none; }
+        .layout-vertical li:only-child { padding-top: 0; }
+        .layout-vertical li:first-child::before, .layout-vertical li:last-child::after { border: 0 none; }
+        .layout-vertical li:last-child::before { border-right: 2px solid #cbd5e1; border-radius: 0 8px 0 0; }
+        .layout-vertical li:first-child::after { border-radius: 8px 0 0 0; }
+        .layout-vertical ul ul::before {
             content: ''; position: absolute; top: 0; left: 50%;
             border-left: 2px solid #cbd5e1; width: 0; height: 24px;
         }
 
-        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 32px; }
-        .orientation-horizontal li { text-align: left; padding: 12px 0 0 32px; }
-        .orientation-horizontal li::before, .orientation-horizontal li::after, .orientation-horizontal ul ul::before { display: none; }
+        /* Layout Horizontal Estilo Diagrama */
+        .layout-horizontal ul { display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 36px; transition: all 0.3s; }
+        .layout-horizontal li { text-align: left; list-style-type: none; position: relative; padding: 12px 0 12px 24px; display: flex; align-items: center; }
+        .layout-horizontal li::before, .layout-horizontal li::after {
+            content: ''; position: absolute; left: 0; top: 50%;
+            border-left: 2px solid #cbd5e1; width: 24px; height: 50%;
+        }
+        .layout-horizontal li::before { top: 0; border-top: 2px solid #cbd5e1; }
+        .layout-horizontal li::after { top: 50%; }
+        .layout-horizontal li:only-child::after, .layout-horizontal li:only-child::before { display: none; }
+        .layout-horizontal li:only-child { padding-left: 0; }
+        .layout-horizontal li:first-child::before { border-left: 0 none; }
+        .layout-horizontal li:last-child::after { border-left: 0 none; }
+        .layout-horizontal ul ul::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            border-top: 2px solid #cbd5e1; height: 0; width: 36px;
+        }
 
         .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; padding-top: 16px; }
 
@@ -110,21 +125,20 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap justify-end">
-            <div class="relative w-36">
+            <!-- Pesquisa de Nome com Lista Suspensa Autocomplete -->
+            <div class="relative w-48">
                 <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="searchInput" placeholder="Pesquisar..." 
+                <input type="text" id="searchInput" list="employeesList" placeholder="Pesquisar colaborador..." 
                     class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                     oninput="filterTree()">
+                <datalist id="employeesList"></datalist>
             </div>
 
+            <!-- Filtro de Layout com Organograma Horizontal Integrado -->
             <select id="layoutFormat" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
-                <option value="tree">Árvore Expandida</option>
+                <option value="tree">Árvore Expandida (Vertical)</option>
+                <option value="horizontal">Árvore Horizontal</option>
                 <option value="compact">Grade Compacta (Imagem)</option>
-            </select>
-
-            <select id="orientationSelect" onchange="changeOrientation()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
-                <option value="vertical">Vertical</option>
-                <option value="horizontal">Horizontal</option>
             </select>
 
             <select id="sortBy" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
@@ -170,7 +184,7 @@
     <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
             <div id="tree-wrapper" class="flex flex-col items-center p-8">
-                <div id="tree-root" class="tf-tree">
+                <div id="tree-root" class="tf-tree layout-vertical">
                     <div class="text-center mt-20 text-slate-400">
                         <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
                         <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
@@ -233,10 +247,25 @@
                 complete: function(results) {
                     globalData = results.data;
                     collapsedNodes.clear();
+                    populateAutocomplete();
                     initApp();
                 }
             });
         });
+
+        // Preenche o datalist com os nomes dos colaboradores para a lista suspensa
+        function populateAutocomplete() {
+            const dataList = document.getElementById('employeesList');
+            dataList.innerHTML = '';
+            globalData.forEach(row => {
+                if (row.NOME) {
+                    const option = document.createElement('option');
+                    option.value = row.NOME.trim();
+                    option.label = `#${row.NUMCAD || ''} - ${row.CARGO || ''}`;
+                    dataList.appendChild(option);
+                }
+            });
+        }
 
         function toggleTheme() {
             isDarkMode = !isDarkMode;
@@ -278,7 +307,7 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
-                    cc: row.CC || 'N/A',
+                    cc: row.CC || 'Unidade Geral',
                     foto: row.FOTO || '',
                     children: []
                 };
@@ -339,7 +368,7 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
-                    cc: row.CC || 'N/A',
+                    cc: row.CC || 'Unidade Geral',
                     foto: row.FOTO || '',
                     children: [],
                     level: 1
@@ -401,6 +430,7 @@
             renderTree(roots, layoutFormat);
         }
 
+        // Renderiza o card padrão incluindo a Unidade de Gestão (CC)
         function renderPillCard(node) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
@@ -434,13 +464,50 @@
                     <div class="ml-3 text-left overflow-hidden w-full">
                         <h3 class="text-xs font-bold truncate leading-tight" title="${node.nome}">${node.nome}</h3>
                         <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium" title="${node.cargo}">${node.cargo}</p>
-                        <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-400 font-mono">
-                            <span>#${node.numcad}</span>
+                        
+                        <!-- Unidade da Gestão (CC) e Informações Gerais -->
+                        <div class="flex items-center gap-1.5 mt-1 text-[9px] text-slate-400 font-mono">
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-1.5 py-0.2 rounded truncate max-w-[90px]" title="Unidade: ${node.cc}">${node.cc}</span>
                             <span>•</span>
                             <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect}</span>
                         </div>
                     </div>
                     ${toggleIndicator}
+                </div>`;
+        }
+
+        // Renderiza o resumo com quantidade por cargo para colaboradores abaixo do Nível 6 (Level 7+)
+        function renderCargoSummaryCard(node) {
+            const cargoCounts = {};
+            
+            function collectCargos(n) {
+                cargoCounts[n.cargo] = (cargoCounts[n.cargo] || 0) + 1;
+                n.children.forEach(collectCargos);
+            }
+            node.children.forEach(collectCargos);
+
+            let summaryHTML = '<div class="space-y-1 mt-1.5 border-t border-slate-200 dark:border-slate-700 pt-1.5">';
+            Object.entries(cargoCounts).forEach(([cargo, count]) => {
+                summaryHTML += `
+                    <div class="flex justify-between items-center text-[10px] text-slate-600 dark:text-slate-300">
+                        <span class="truncate max-w-[140px] font-medium" title="${cargo}">${cargo}</span>
+                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-full text-[9px]">${count}x</span>
+                    </div>`;
+            });
+            summaryHTML += '</div>';
+
+            const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
+
+            return `
+                <div class="relative inline-flex flex-col ${cardBg} border rounded-2xl p-3 shadow-md w-64 text-left">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
+                        <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-sm">
+                            NÍVEL 6+ (EQUIPE)
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400">Total: ${node.hcIndirect}</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-700 dark:text-slate-200 mt-1">Resumo por Cargo:</p>
+                    ${summaryHTML}
                 </div>`;
         }
 
@@ -454,10 +521,11 @@
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-20 text-center cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-24 text-center cursor-pointer group">
                     <div class="relative">${fotoHTML}</div>
                     <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
                     <span class="text-[8px] text-slate-400 truncate w-full block" title="${node.cargo}">${node.cargo}</span>
+                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded mt-0.5 truncate w-full" title="${node.cc}">${node.cc}</span>
                 </div>`;
         }
 
@@ -465,6 +533,11 @@
             const isLeaf = node.children.length === 0;
             const useCircle = layoutFormat === 'compact' && isLeaf;
             const isCollapsed = collapsedNodes.has(node.numcad);
+
+            // Abaixo do Nível 6 (Level > 6), traz o resumo condensado da quantidade de pessoas por cargo
+            if (node.level > 6 && node.children.length > 0 && !isCollapsed) {
+                return `<li>${renderPillCard(node)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
+            }
 
             let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node)}`;
 
@@ -494,6 +567,13 @@
                 return;
             }
 
+            // Aplica a classe CSS correspondente ao formato selecionado (Vertical ou Horizontal)
+            if (layoutFormat === 'horizontal') {
+                container.className = 'tf-tree layout-horizontal';
+            } else {
+                container.className = 'tf-tree layout-vertical';
+            }
+
             let html = '<ul>';
             roots.forEach(root => {
                 html += renderNodeHTML(root, layoutFormat);
@@ -502,21 +582,6 @@
 
             container.innerHTML = html;
             lucide.createIcons();
-            applyOrientationClass();
-        }
-
-        function changeOrientation() {
-            applyOrientationClass();
-        }
-
-        function applyOrientationClass() {
-            const orientation = document.getElementById('orientationSelect').value;
-            const treeRoot = document.getElementById('tree-root');
-            if (orientation === 'horizontal') {
-                treeRoot.classList.add('orientation-horizontal');
-            } else {
-                treeRoot.classList.remove('orientation-horizontal');
-            }
         }
 
         // Funções de Exportação sem cortes
@@ -591,16 +656,14 @@
 
                 const imgData = canvas.toDataURL('image/png');
                 
-                // Instancia PptxGenJS via objeto global da janela
                 let pptx = new window.PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
                 let slide = pptx.addSlide();
                 slide.background = { color: bgHex };
                 
-                // Slide 16:9 widescreen (13.33 x 7.5 polegadas)
                 const slideW = 13.333;
                 const slideH = 7.5;
-                const margin = 0.5; // Margem para não cortar as bordas
+                const margin = 0.5;
                 
                 const canvasW = canvas.width;
                 const canvasH = canvas.height;
