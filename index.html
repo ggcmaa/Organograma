@@ -23,11 +23,11 @@
             }
         }
     </script>
-    <!-- Bibliotecas de Apoio -->
+    <!-- Bibliotecas de Apoio (PptxGenJS atualizado e estável) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -579,33 +579,43 @@
         async function exportPPT() {
             const origTransform = await prepareForExport();
             const target = document.getElementById('tree-wrapper');
-            const bg = isDarkMode ? '0F172A' : 'F1F5F9';
+            const bgHex = isDarkMode ? '0F172A' : 'F1F5F9';
 
             html2canvas(target, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
                 const imgData = canvas.toDataURL('image/png');
+                
                 let pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
                 let slide = pptx.addSlide();
-                slide.background = { color: bg };
+                slide.background = { color: bgHex };
                 
-                // Calcula proporção exata para o PPTx preencher o slide de forma responsiva sem cortar as pontas
-                const imgProps = pptx.getImageProperties(imgData);
-                const slideWidth = 13.333; // Largura do slide 16:9 em polegadas
-                const slideHeight = 7.5;   // Altura do slide 16:9 em polegadas
+                // Dimensões do slide 16:9 em polegadas
+                const slideWidth = 13.333;
+                const slideHeight = 7.5;
                 
-                let w = slideWidth - 1.0;
-                let h = (imgProps.h * w) / imgProps.w;
+                // Calcula dimensões proporcionais sem distorcer e sem cortar
+                const imgWidthPx = canvas.width;
+                const imgHeightPx = canvas.height;
+                const ratio = imgWidthPx / imgHeightPx;
                 
-                if (h > (slideHeight - 1.0)) {
-                    h = slideHeight - 1.0;
-                    w = (imgProps.w * h) / imgProps.h;
+                let w = slideWidth - 0.8;
+                let h = w / ratio;
+                
+                if (h > (slideHeight - 0.8)) {
+                    h = slideHeight - 0.8;
+                    w = h * ratio;
                 }
                 
                 let x = (slideWidth - w) / 2;
                 let y = (slideHeight - h) / 2;
 
                 slide.addImage({ data: imgData, x: x, y: y, w: w, h: h });
-                pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
+                
+                pptx.writeFile({ fileName: 'organograma-cmaa.pptx' }).catch(err => {
+                    console.error("Erro ao gerar PPTX:", err);
+                    alert("Erro ao exportar PowerPoint. Verifique o console.");
+                });
+
                 await restoreAfterExport(origTransform);
             });
         }
