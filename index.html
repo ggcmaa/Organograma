@@ -33,6 +33,16 @@
     <style>
         .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
         
+        /* Estilos base para garantir exibição sem corte em exportação */
+        .exporting-mode .truncate {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        .exporting-mode .overflow-hidden {
+            overflow: visible !important;
+        }
+
         /* Layout Vertical */
         .layout-vertical ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
         .layout-vertical li { text-align: center; list-style-type: none; position: relative; padding: 24px 12px 0 12px; }
@@ -53,7 +63,7 @@
 
         /* Layout Horizontal Estilo Diagrama */
         .layout-horizontal ul { display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 36px; transition: all 0.3s; }
-        .layout-horizontal li { text-align: left; list-style-type: none; position: relative; padding: 12px 0 12px 24px; display: flex; align-items: center; }
+        .layout-horizontal li { text-align: left; list-style-type: none; position: relative; padding: 14px 0 14px 24px; display: flex; align-items: center; }
         .layout-horizontal li::before, .layout-horizontal li::after {
             content: ''; position: absolute; left: 0; top: 50%;
             border-left: 2px solid #cbd5e1; width: 24px; height: 50%;
@@ -69,9 +79,9 @@
             border-top: 2px solid #cbd5e1; height: 0; width: 36px;
         }
 
-        /* Layout Horizontal Compacto (Otimizado para exportar tudo em uma única folha/slide) */
+        /* Layout Horizontal Compacto */
         .layout-horizontal-compact ul { display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 24px; }
-        .layout-horizontal-compact li { text-align: left; list-style-type: none; position: relative; padding: 6px 0 6px 16px; display: flex; align-items: center; }
+        .layout-horizontal-compact li { text-align: left; list-style-type: none; position: relative; padding: 8px 0 8px 16px; display: flex; align-items: center; }
         .layout-horizontal-compact li::before, .layout-horizontal-compact li::after {
             content: ''; position: absolute; left: 0; top: 50%;
             border-left: 1px solid #cbd5e1; width: 16px; height: 50%;
@@ -152,7 +162,7 @@
                 <datalist id="employeesList"></datalist>
             </div>
 
-            <!-- Filtro de Layout com Visão Horizontal Compacta -->
+            <!-- Filtro de Layout -->
             <select id="layoutFormat" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
                 <option value="tree">Árvore Expandida (Vertical)</option>
                 <option value="horizontal">Árvore Horizontal</option>
@@ -202,7 +212,7 @@
     <!-- ÁREA PRINCIPAL -->
     <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
-            <div id="tree-wrapper" class="flex flex-col items-center p-8">
+            <div id="tree-wrapper" class="flex flex-col items-center p-8 bg-transparent">
                 <div id="tree-root" class="tf-tree layout-vertical">
                     <div class="text-center mt-20 text-slate-400">
                         <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
@@ -272,7 +282,6 @@
             });
         });
 
-        // Preenche o datalist com os nomes ordenados estritamente em ordem alfabética (A-Z)
         function populateAutocomplete() {
             const dataList = document.getElementById('employeesList');
             dataList.innerHTML = '';
@@ -453,15 +462,15 @@
             renderTree(roots, layoutFormat);
         }
 
-        // Renderiza o card padrão incluindo a Unidade de Gestão (CC)
+        // Card ajustado com dimensões flexíveis para evitar cortes em textos longos
         function renderPillCard(node, isCompactMode = false) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-10 h-10 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-10 h-10 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
+                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
@@ -478,19 +487,21 @@
                     </div>`;
             }
 
+            // Largura e espaçamentos auto-ajustáveis para visualização perfeita na exportação
+            const cardWidth = isCompactMode ? 'w-64 min-h-[76px]' : 'w-72 min-h-[82px]';
+
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-full pl-2 pr-4 py-1.5 shadow-md w-56 hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-2.5 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
                         L${node.level}
                     </span>
                     ${fotoHTML}
-                    <div class="ml-2.5 text-left overflow-hidden w-full">
-                        <h3 class="text-xs font-bold truncate leading-tight" title="${node.nome}">${node.nome}</h3>
-                        <p class="text-[9px] text-slate-400 truncate mt-0.5 font-medium" title="${node.cargo}">${node.cargo}</p>
+                    <div class="ml-3 text-left w-full min-w-0 pr-2">
+                        <h3 class="text-xs font-bold leading-tight break-words text-slate-800 dark:text-white" title="${node.nome}">${node.nome}</h3>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5 break-words" title="${node.cargo}">${node.cargo}</p>
                         
-                        <!-- Unidade da Gestão (CC) -->
-                        <div class="flex items-center gap-1 mt-0.5 text-[8px] text-slate-400 font-mono">
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-1 rounded truncate max-w-[80px]" title="Unidade: ${node.cc}">${node.cc}</span>
+                        <div class="flex items-center gap-1.5 mt-1.5 text-[9px] text-slate-400 font-mono">
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Unidade: ${node.cc}">${node.cc}</span>
                             <span>•</span>
                             <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect}</span>
                         </div>
@@ -499,7 +510,6 @@
                 </div>`;
         }
 
-        // Resumo por cargo abaixo do Nível 6
         function renderCargoSummaryCard(node) {
             const cargoCounts = {};
             function collectCargos(n) {
@@ -512,8 +522,8 @@
             Object.entries(cargoCounts).forEach(([cargo, count]) => {
                 summaryHTML += `
                     <div class="flex justify-between items-center text-[9px] text-slate-600 dark:text-slate-300">
-                        <span class="truncate max-w-[120px] font-medium" title="${cargo}">${cargo}</span>
-                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full text-[8px]">${count}x</span>
+                        <span class="font-medium break-words pr-1" title="${cargo}">${cargo}</span>
+                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full text-[8px] shrink-0">${count}x</span>
                     </div>`;
             });
             summaryHTML += '</div>';
@@ -521,7 +531,7 @@
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
 
             return `
-                <div class="relative inline-flex flex-col ${cardBg} border rounded-xl p-2.5 shadow-md w-52 text-left">
+                <div class="relative inline-flex flex-col ${cardBg} border rounded-xl p-2.5 shadow-md w-64 text-left">
                     <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
                         <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-600 text-white">NÍVEL 6+ (EQUIPE)</span>
                         <span class="text-[9px] font-mono text-slate-400">Total: ${node.hcIndirect}</span>
@@ -540,11 +550,11 @@
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-20 text-center cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-24 text-center cursor-pointer group">
                     <div class="relative">${fotoHTML}</div>
-                    <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
-                    <span class="text-[8px] text-slate-400 truncate w-full block" title="${node.cargo}">${node.cargo}</span>
-                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded mt-0.5 truncate w-full" title="${node.cc}">${node.cc}</span>
+                    <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
+                    <span class="text-[8px] text-slate-400 break-words w-full block" title="${node.cargo}">${node.cargo}</span>
+                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded mt-0.5 break-words w-full" title="${node.cc}">${node.cc}</span>
                 </div>`;
         }
 
@@ -604,38 +614,58 @@
             lucide.createIcons();
         }
 
-        // Funções de Exportação sem cortes com margem de segurança otimizada para PPT
+        // Funções de captura totalmente revisadas sem cortes de dados
         async function prepareForExport() {
+            const wrapper = document.getElementById('tree-wrapper');
             const originalTransform = panContainer.style.transform;
+            
+            // Remove transformações para captura em escala real 1:1
             panContainer.style.transform = 'translate(0px, 0px) scale(1)';
+            wrapper.classList.add('exporting-mode');
+
             await new Promise(resolve => setTimeout(resolve, 500));
-            return originalTransform;
+            return { originalTransform, wrapper };
         }
 
-        async function restoreAfterExport(originalTransform) {
-            panContainer.style.transform = originalTransform;
+        async function restoreAfterExport(prep) {
+            prep.wrapper.classList.remove('exporting-mode');
+            panContainer.style.transform = prep.originalTransform;
         }
 
         async function exportImage() {
-            const origTransform = await prepareForExport();
+            const prep = await prepareForExport();
             const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
 
-            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
+            html2canvas(target, { 
+                backgroundColor: bg, 
+                scale: 2, 
+                useCORS: true, 
+                scrollY: -window.scrollY,
+                windowWidth: target.scrollWidth + 100,
+                windowHeight: target.scrollHeight + 100
+            }).then(async canvas => {
                 const link = document.createElement('a');
                 link.download = 'organograma-cmaa.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-                await restoreAfterExport(origTransform);
+                await restoreAfterExport(prep);
             });
         }
 
         async function exportPDF() {
-            const origTransform = await prepareForExport();
+            const prep = await prepareForExport();
             const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
 
-            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
+            html2canvas(target, { 
+                backgroundColor: bg, 
+                scale: 2, 
+                useCORS: true, 
+                scrollY: -window.scrollY,
+                windowWidth: target.scrollWidth + 100,
+                windowHeight: target.scrollHeight + 100
+            }).then(async canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -657,22 +687,23 @@
                 }
 
                 pdf.save('organograma-cmaa.pdf');
-                await restoreAfterExport(origTransform);
+                await restoreAfterExport(prep);
             });
         }
 
         async function exportPPT() {
-            const origTransform = await prepareForExport();
+            const prep = await prepareForExport();
             const target = document.getElementById('tree-wrapper');
             const bgHex = isDarkMode ? '0F172A' : 'F1F5F9';
 
             try {
-                // Aumenta escala para garantir nitidez máxima para a alta gestão
                 const canvas = await html2canvas(target, { 
                     backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', 
                     scale: 2.5, 
                     useCORS: true, 
-                    scrollY: -window.scrollY 
+                    scrollY: -window.scrollY,
+                    windowWidth: target.scrollWidth + 150,
+                    windowHeight: target.scrollHeight + 150
                 });
 
                 const imgData = canvas.toDataURL('image/png');
@@ -682,10 +713,9 @@
                 let slide = pptx.addSlide();
                 slide.background = { color: bgHex };
                 
-                // Dimensões do slide 16:9 em polegadas com margens seguras para evitar corte de nomes nas pontas
                 const slideW = 13.333;
                 const slideH = 7.5;
-                const margin = 0.8; 
+                const margin = 0.4; // Margem ajustada para aproveitamento máximo da tela
                 
                 const canvasW = canvas.width;
                 const canvasH = canvas.height;
@@ -715,7 +745,7 @@
                 console.error("Erro na geração do PowerPoint:", err);
                 alert("Ocorreu um erro ao gerar o arquivo de PowerPoint.");
             } finally {
-                await restoreAfterExport(origTransform);
+                await restoreAfterExport(prep);
             }
         }
 
