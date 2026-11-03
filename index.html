@@ -69,6 +69,24 @@
             border-top: 2px solid #cbd5e1; height: 0; width: 36px;
         }
 
+        /* Layout Horizontal Compacto (Otimizado para exportar tudo em uma única folha/slide) */
+        .layout-horizontal-compact ul { display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 24px; }
+        .layout-horizontal-compact li { text-align: left; list-style-type: none; position: relative; padding: 6px 0 6px 16px; display: flex; align-items: center; }
+        .layout-horizontal-compact li::before, .layout-horizontal-compact li::after {
+            content: ''; position: absolute; left: 0; top: 50%;
+            border-left: 1px solid #cbd5e1; width: 16px; height: 50%;
+        }
+        .layout-horizontal-compact li::before { top: 0; border-top: 1px solid #cbd5e1; }
+        .layout-horizontal-compact li::after { top: 50%; }
+        .layout-horizontal-compact li:only-child::after, .layout-horizontal-compact li:only-child::before { display: none; }
+        .layout-horizontal-compact li:only-child { padding-left: 0; }
+        .layout-horizontal-compact li:first-child::before { border-left: 0 none; }
+        .layout-horizontal-compact li:last-child::after { border-left: 0 none; }
+        .layout-horizontal-compact ul ul::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            border-top: 1px solid #cbd5e1; height: 0; width: 24px;
+        }
+
         .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; padding-top: 16px; }
 
         #viewport { cursor: grab; }
@@ -125,7 +143,7 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap justify-end">
-            <!-- Pesquisa de Nome com Lista Suspensa Autocomplete -->
+            <!-- Pesquisa de Nome com Autocomplete -->
             <div class="relative w-48">
                 <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <input type="text" id="searchInput" list="employeesList" placeholder="Pesquisar colaborador..." 
@@ -134,10 +152,11 @@
                 <datalist id="employeesList"></datalist>
             </div>
 
-            <!-- Filtro de Layout com Organograma Horizontal Integrado -->
+            <!-- Filtro de Layout com Visão Horizontal Compacta -->
             <select id="layoutFormat" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
                 <option value="tree">Árvore Expandida (Vertical)</option>
                 <option value="horizontal">Árvore Horizontal</option>
+                <option value="horizontal-compact">Árvore Horizontal Compacta</option>
                 <option value="compact">Grade Compacta (Imagem)</option>
             </select>
 
@@ -253,17 +272,21 @@
             });
         });
 
-        // Preenche o datalist com os nomes dos colaboradores para a lista suspensa
+        // Preenche o datalist com os nomes ordenados estritamente em ordem alfabética (A-Z)
         function populateAutocomplete() {
             const dataList = document.getElementById('employeesList');
             dataList.innerHTML = '';
-            globalData.forEach(row => {
-                if (row.NOME) {
-                    const option = document.createElement('option');
-                    option.value = row.NOME.trim();
-                    option.label = `#${row.NUMCAD || ''} - ${row.CARGO || ''}`;
-                    dataList.appendChild(option);
-                }
+            
+            const sortedNames = globalData
+                .filter(row => row.NOME)
+                .map(row => ({ nome: row.NOME.trim(), numcad: row.NUMCAD || '', cargo: row.CARGO || '' }))
+                .sort((a, b) => a.nome.localeCompare(b.nome));
+
+            sortedNames.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.nome;
+                option.label = `#${item.numcad} - ${item.cargo}`;
+                dataList.appendChild(option);
             });
         }
 
@@ -431,14 +454,14 @@
         }
 
         // Renderiza o card padrão incluindo a Unidade de Gestão (CC)
-        function renderPillCard(node) {
+        function renderPillCard(node, isCompactMode = false) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-12 h-12 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-12 h-12 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-6 h-6"></i></div>`;
+                ? `<img src="${node.foto}" class="w-10 h-10 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
+                : `<div class="w-10 h-10 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
@@ -456,18 +479,18 @@
             }
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-full pl-2 pr-5 py-2 shadow-md w-64 hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-full pl-2 pr-4 py-1.5 shadow-md w-56 hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
-                        LEVEL ${String.fromCharCode(64 + node.level)}
+                        L${node.level}
                     </span>
                     ${fotoHTML}
-                    <div class="ml-3 text-left overflow-hidden w-full">
+                    <div class="ml-2.5 text-left overflow-hidden w-full">
                         <h3 class="text-xs font-bold truncate leading-tight" title="${node.nome}">${node.nome}</h3>
-                        <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium" title="${node.cargo}">${node.cargo}</p>
+                        <p class="text-[9px] text-slate-400 truncate mt-0.5 font-medium" title="${node.cargo}">${node.cargo}</p>
                         
-                        <!-- Unidade da Gestão (CC) e Informações Gerais -->
-                        <div class="flex items-center gap-1.5 mt-1 text-[9px] text-slate-400 font-mono">
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-1.5 py-0.2 rounded truncate max-w-[90px]" title="Unidade: ${node.cc}">${node.cc}</span>
+                        <!-- Unidade da Gestão (CC) -->
+                        <div class="flex items-center gap-1 mt-0.5 text-[8px] text-slate-400 font-mono">
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-1 rounded truncate max-w-[80px]" title="Unidade: ${node.cc}">${node.cc}</span>
                             <span>•</span>
                             <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect}</span>
                         </div>
@@ -476,22 +499,21 @@
                 </div>`;
         }
 
-        // Renderiza o resumo com quantidade por cargo para colaboradores abaixo do Nível 6 (Level 7+)
+        // Resumo por cargo abaixo do Nível 6
         function renderCargoSummaryCard(node) {
             const cargoCounts = {};
-            
             function collectCargos(n) {
                 cargoCounts[n.cargo] = (cargoCounts[n.cargo] || 0) + 1;
                 n.children.forEach(collectCargos);
             }
             node.children.forEach(collectCargos);
 
-            let summaryHTML = '<div class="space-y-1 mt-1.5 border-t border-slate-200 dark:border-slate-700 pt-1.5">';
+            let summaryHTML = '<div class="space-y-1 mt-1 border-t border-slate-200 dark:border-slate-700 pt-1">';
             Object.entries(cargoCounts).forEach(([cargo, count]) => {
                 summaryHTML += `
-                    <div class="flex justify-between items-center text-[10px] text-slate-600 dark:text-slate-300">
-                        <span class="truncate max-w-[140px] font-medium" title="${cargo}">${cargo}</span>
-                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 rounded-full text-[9px]">${count}x</span>
+                    <div class="flex justify-between items-center text-[9px] text-slate-600 dark:text-slate-300">
+                        <span class="truncate max-w-[120px] font-medium" title="${cargo}">${cargo}</span>
+                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full text-[8px]">${count}x</span>
                     </div>`;
             });
             summaryHTML += '</div>';
@@ -499,14 +521,11 @@
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
 
             return `
-                <div class="relative inline-flex flex-col ${cardBg} border rounded-2xl p-3 shadow-md w-64 text-left">
-                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
-                        <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-sm">
-                            NÍVEL 6+ (EQUIPE)
-                        </span>
-                        <span class="text-[10px] font-mono text-slate-400">Total: ${node.hcIndirect}</span>
+                <div class="relative inline-flex flex-col ${cardBg} border rounded-xl p-2.5 shadow-md w-52 text-left">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
+                        <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-600 text-white">NÍVEL 6+ (EQUIPE)</span>
+                        <span class="text-[9px] font-mono text-slate-400">Total: ${node.hcIndirect}</span>
                     </div>
-                    <p class="text-[10px] font-bold text-slate-700 dark:text-slate-200 mt-1">Resumo por Cargo:</p>
                     ${summaryHTML}
                 </div>`;
         }
@@ -521,7 +540,7 @@
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-24 text-center cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-20 text-center cursor-pointer group">
                     <div class="relative">${fotoHTML}</div>
                     <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
                     <span class="text-[8px] text-slate-400 truncate w-full block" title="${node.cargo}">${node.cargo}</span>
@@ -532,14 +551,14 @@
         function renderNodeHTML(node, layoutFormat) {
             const isLeaf = node.children.length === 0;
             const useCircle = layoutFormat === 'compact' && isLeaf;
+            const isCompact = layoutFormat === 'horizontal-compact';
             const isCollapsed = collapsedNodes.has(node.numcad);
 
-            // Abaixo do Nível 6 (Level > 6), traz o resumo condensado da quantidade de pessoas por cargo
             if (node.level > 6 && node.children.length > 0 && !isCollapsed) {
-                return `<li>${renderPillCard(node)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
+                return `<li>${renderPillCard(node, isCompact)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
             }
 
-            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node)}`;
+            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node, isCompact)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
                 if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
@@ -567,9 +586,10 @@
                 return;
             }
 
-            // Aplica a classe CSS correspondente ao formato selecionado (Vertical ou Horizontal)
             if (layoutFormat === 'horizontal') {
                 container.className = 'tf-tree layout-horizontal';
+            } else if (layoutFormat === 'horizontal-compact') {
+                container.className = 'tf-tree layout-horizontal-compact';
             } else {
                 container.className = 'tf-tree layout-vertical';
             }
@@ -584,11 +604,11 @@
             lucide.createIcons();
         }
 
-        // Funções de Exportação sem cortes
+        // Funções de Exportação sem cortes com margem de segurança otimizada para PPT
         async function prepareForExport() {
             const originalTransform = panContainer.style.transform;
             panContainer.style.transform = 'translate(0px, 0px) scale(1)';
-            await new Promise(resolve => setTimeout(resolve, 400));
+            await new Promise(resolve => setTimeout(resolve, 500));
             return originalTransform;
         }
 
@@ -647,9 +667,10 @@
             const bgHex = isDarkMode ? '0F172A' : 'F1F5F9';
 
             try {
+                // Aumenta escala para garantir nitidez máxima para a alta gestão
                 const canvas = await html2canvas(target, { 
                     backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', 
-                    scale: 2, 
+                    scale: 2.5, 
                     useCORS: true, 
                     scrollY: -window.scrollY 
                 });
@@ -661,9 +682,10 @@
                 let slide = pptx.addSlide();
                 slide.background = { color: bgHex };
                 
+                // Dimensões do slide 16:9 em polegadas com margens seguras para evitar corte de nomes nas pontas
                 const slideW = 13.333;
                 const slideH = 7.5;
-                const margin = 0.5;
+                const margin = 0.8; 
                 
                 const canvasW = canvas.width;
                 const canvasH = canvas.height;
@@ -688,7 +710,7 @@
                     h: targetH 
                 });
                 
-                await pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
+                await pptx.writeFile({ fileName: 'organograma-executivo-cmaa.pptx' });
             } catch (err) {
                 console.error("Erro na geração do PowerPoint:", err);
                 alert("Ocorreu um erro ao gerar o arquivo de PowerPoint.");
