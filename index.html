@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organograma Avançado - Gente e Gestão</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cmaa: {
+                            bg: '#0b0f17',
+                            card: '#151c28',
+                            border: '#232d3f',
+                            emerald: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- PapaParse para ler CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
+        .tf-tree ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
+        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 8px 0 8px; }
+        .tf-tree li::before, .tf-tree li::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 2px solid #334155; width: 50%; height: 24px;
+        }
+        .tf-tree li::after { right: auto; left: 50%; border-left: 2px solid #334155; }
+        .tf-tree li:only-child::after, .tf-tree li:only-child::before { display: none; }
+        .tf-tree li:only-child { padding-top: 0; }
+        .tf-tree li:first-child::before, .tf-tree li:last-child::after { border: 0 none; }
+        .tf-tree li:last-child::before { border-right: 2px solid #334155; border-radius: 0 8px 0 0; }
+        .tf-tree li:first-child::after { border-radius: 8px 0 0 0; }
+        .tf-tree ul ul::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            border-left: 2px solid #334155; width: 0; height: 24px;
+        }
+        #viewport { cursor: grab; }
+        #viewport:active { cursor: grabbing; }
+    </style>
+</head>
+<body class="bg-cmaa-bg text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- Navbar Topo -->
+    <header class="h-16 border-b border-cmaa-border bg-cmaa-card/80 backdrop-blur px-6 flex items-center justify-between z-10 shrink-0 gap-4">
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
+                <i data-lucide="network" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide text-white">Organograma Avançado</h1>
+                <p class="text-xs text-slate-400">Gente & Gestão</p>
+            </div>
+        </div>
+
+        <!-- Controles de Filtros e Pesquisa -->
+        <div class="flex items-center gap-3 flex-1 max-w-2xl justify-end">
+            <!-- Pesquisa por Nome / Matrícula -->
+            <div class="relative flex-1 max-w-xs">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="searchInput" placeholder="Pesquisar colaborador..." 
+                    class="w-full bg-cmaa-bg border border-cmaa-border rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+                    oninput="filterTree()">
+            </div>
+
+            <!-- Filtro de Nível -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-xs text-slate-400">Nível Max:</span>
+                <select id="levelFilter" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                    <option value="all">Todos</option>
+                </select>
+            </div>
+
+            <!-- Importar CSV -->
+            <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-950/40 shrink-0">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                CSV
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+            </label>
+
+            <!-- Zoom -->
+            <div class="flex items-center bg-cmaa-bg border border-cmaa-border rounded-lg p-1 gap-1 shrink-0">
+                <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Reduzir"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                <button onclick="resetZoom()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Resetar"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Aumentar"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Área Principal -->
+    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full">
+        <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
+            <div id="tree-root" class="tf-tree">
+                <div class="text-center mt-20 text-slate-500">
+                    <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+                    <p class="text-sm font-medium">Carregue um arquivo CSV com as colunas:<br><code class="text-xs text-emerald-400">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        let globalData = [];
+        let zoomLevel = 1, isPanning = false, startX = 0, startY = 0, translateX = 0, translateY = 0;
+        const viewport = document.getElementById('viewport');
+        const panContainer = document.getElementById('pan-container');
+
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    globalData = results.data;
+                    initApp();
+                }
+            });
+        });
+
+        function initApp() {
+            const map = {};
+            globalData.forEach(row => {
+                const numcad = String(row.NUMCAD || '').trim();
+                if (!numcad) return;
+                map[numcad] = {
+                    numcad: numcad,
+                    nome: row.NOME || 'Sem Nome',
+                    numlid: String(row.NUMLID || '').trim(),
+                    cargo: row.CARGO || 'Cargo não informado',
+                    cc: row.CC || 'N/A',
+                    foto: row.FOTO || '',
+                    children: []
+                };
+            });
+
+            // Atribuir níveis e calcular HC Direto e Indireto
+            const roots = [];
+            Object.values(map).forEach(node => {
+                if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
+                    map[node.numlid].children.push(node);
+                } else {
+                    roots.push(node);
+                }
+            });
+
+            function calculateMetrics(node, currentLevel = 1) {
+                node.level = currentLevel;
+                let direct = node.children.length;
+                let indirect = direct;
+                node.children.forEach(child => {
+                    indirect += calculateMetrics(child, currentLevel + 1);
+                });
+                node.hcDirect = direct;
+                node.hcIndirect = indirect;
+                return indirect;
+            }
+
+            roots.forEach(root => calculateMetrics(root, 1));
+            
+            // Popular select de níveis
+            let maxDepth = 0;
+            function findMaxDepth(node) {
+                if (node.level > maxDepth) maxDepth = node.level;
+                node.children.forEach(findMaxDepth);
+            }
+            roots.forEach(findMaxDepth);
+
+            const levelSelect = document.getElementById('levelFilter');
+            levelSelect.innerHTML = '<option value="all">Todos os Níveis</option>';
+            for (let i = 1; i <= maxDepth; i++) {
+                levelSelect.innerHTML += `<option value="${i}">Até o Nível ${i}</option>`;
+            }
+
+            renderTree(roots);
+        }
+
+        function filterTree() {
+            if (globalData.length === 0) return;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const maxLevel = document.getElementById('levelFilter').value;
+
+            const map = {};
+            globalData.forEach(row => {
+                const numcad = String(row.NUMCAD || '').trim();
+                if (!numcad) return;
+                map[numcad] = {
+                    numcad: numcad,
+                    nome: row.NOME || 'Sem Nome',
+                    numlid: String(row.NUMLID || '').trim(),
+                    cargo: row.CARGO || 'Cargo não informado',
+                    cc: row.CC || 'N/A',
+                    foto: row.FOTO || '',
+                    children: [],
+                    level: 1
+                };
+            });
+
+            let roots = [];
+            Object.values(map).forEach(node => {
+                if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
+                    map[node.numlid].children.push(node);
+                } else {
+                    roots.push(node);
+                }
+            });
+
+            function calculateMetrics(node, currentLevel = 1) {
+                node.level = currentLevel;
+                let direct = node.children.length;
+                let indirect = direct;
+                node.children.forEach(child => {
+                    indirect += calculateMetrics(child, currentLevel + 1);
+                });
+                node.hcDirect = direct;
+                node.hcIndirect = indirect;
+                return indirect;
+            }
+            roots.forEach(root => calculateMetrics(root, 1));
+
+            // Filtrar por nível
+            function applyLevelFilter(nodes, limit) {
+                return nodes.filter(node => {
+                    if (limit !== 'all' && node.level > parseInt(limit)) return false;
+                    node.children = applyLevelFilter(node.children, limit);
+                    return true;
+                });
+            }
+            if (maxLevel !== 'all') {
+                roots = applyLevelFilter(roots, maxLevel);
+            }
+
+            // Filtrar por busca de nome/matrícula
+            if (searchTerm) {
+                let matchedNode = null;
+                Object.values(map).forEach(n => {
+                    if (n.nome.toLowerCase().includes(searchTerm) || n.numcad.toLowerCase().includes(searchTerm)) {
+                        matchedNode = n;
+                    }
+                });
+                if (matchedNode) {
+                    roots = [matchedNode];
+                } else {
+                    roots = [];
+                }
+            }
+
+            renderTree(roots);
+        }
+
+        function renderNodeHTML(node) {
+            const hasFoto = node.foto && node.foto.length > 5;
+            const fotoHTML = hasFoto 
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/50 shadow shrink-0" alt="">`
+                : `<div class="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+
+            let html = `<li>
+                <div class="inline-block bg-cmaa-card border border-cmaa-border hover:border-emerald-500/60 transition-all rounded-xl p-3 w-60 text-left shadow-lg relative">
+                    <div class="flex items-center gap-3">
+                        ${fotoHTML}
+                        <div class="overflow-hidden">
+                            <span class="text-[10px] font-mono font-bold text-emerald-400 block tracking-wider">#${node.numcad}</span>
+                            <h3 class="text-xs font-bold text-white truncate leading-tight">${node.nome}</h3>
+                            <p class="text-[10px] text-slate-400 truncate mt-0.5">${node.cargo}</p>
+                        </div>
+                    </div>
+                    <!-- HeadCount Badge -->
+                    <div class="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>CC: <strong class="text-slate-300">${node.cc}</strong></span>
+                        <div class="flex gap-2">
+                            <span title="Headcount Direto" class="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400 font-mono">Dir: ${node.hcDirect}</span>
+                            <span title="Headcount Indireto" class="bg-slate-800 px-1.5 py-0.5 rounded text-cyan-400 font-mono">Ind: ${node.hcIndirect}</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            if (node.children.length > 0) {
+                html += '<ul>';
+                node.children.forEach(child => {
+                    html += renderNodeHTML(child);
+                });
+                html += '</ul>';
+            }
+
+            html += '</li>';
+            return html;
+        }
+
+        function renderTree(roots) {
+            const container = document.getElementById('tree-root');
+            if (roots.length === 0) {
+                container.innerHTML = `<p class="text-red-400 text-sm text-center mt-10">Nenhum registo encontrado com os filtros aplicados.</p>`;
+                return;
+            }
+
+            let html = '<ul>';
+            roots.forEach(root => {
+                html += renderNodeHTML(root);
+            });
+            html += '</ul>';
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Funções de Zoom & Pan
+        function updateTransform() {
+            panContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+        }
+        function zoomIn() { zoomLevel = Math.min(zoomLevel + 0.15, 2.5); updateTransform(); }
+        function zoomOut() { zoomLevel = Math.max(zoomLevel - 0.15, 0.3); updateTransform(); }
+        function resetZoom() { zoomLevel = 1; translateX = 0; translateY = 0; updateTransform(); }
+
+        viewport.addEventListener('mousedown', (e) => {
+            isPanning = true; startX = e.clientX - translateX; startY = e.clientY - translateY;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            translateX = e.clientX - startX; translateY = e.clientY - startY;
+            updateTransform();
+        });
+        window.addEventListener('mouseup', () => { isPanning = false; });
+    </script>
+</body>
+</html>
