@@ -169,10 +169,27 @@
     <!-- ÁREA PRINCIPAL -->
     <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
-            <div id="tree-root" class="tf-tree">
-                <div class="text-center mt-20 text-slate-400">
-                    <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-                    <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
+            <div id="tree-wrapper" class="flex flex-col items-center">
+                <!-- Cabeçalho Executivo para Exportação -->
+                <div id="export-header" class="hidden mb-8 w-full max-w-4xl bg-white border border-slate-200 rounded-xl p-6 shadow-md flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <img src="CMAA.png" alt="CMAA Logo" class="h-10 object-contain" onerror="this.style.display='none'">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Organograma Corporativo - Gente & Gestão</h2>
+                            <p class="text-xs text-slate-500">Companhia Moinhos Agrícolas e Arrendamentos</p>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs text-slate-400 font-mono">
+                        Emitido em: <span id="export-date"></span>
+                    </div>
+                </div>
+
+                <!-- Árvore do Organograma -->
+                <div id="tree-root" class="tf-tree">
+                    <div class="text-center mt-20 text-slate-400">
+                        <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+                        <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -188,7 +205,6 @@
         const viewport = document.getElementById('viewport');
         const panContainer = document.getElementById('pan-container');
 
-        // FUNÇÃO DE AUTENTICAÇÃO VIA API POWER AUTOMATE
         async function handleLogin(event) {
             event.preventDefault();
             const user = document.getElementById('loginUser').value;
@@ -518,26 +534,52 @@
             }
         }
 
-        function exportImage() {
-            const target = document.getElementById('pan-container');
+        // Funções de Exportação Otimizadas com Cabeçalho
+        async function prepareForExport() {
+            const header = document.getElementById('export-header');
+            const dateSpan = document.getElementById('export-date');
+            dateSpan.innerText = new Date().toLocaleDateString('pt-BR');
+            header.classList.remove('hidden');
+
+            // Resetar temporariamente zoom e posição para capturar a árvore inteira sem cortes
+            const originalTransform = panContainer.style.transform;
+            panContainer.style.transform = 'translate(0px, 0px) scale(1)';
+            await new Promise(resolve => setTimeout(resolve, 300)); // Aguarda renderização
+            return originalTransform;
+        }
+
+        async function restoreAfterExport(originalTransform) {
+            const header = document.getElementById('export-header');
+            header.classList.add('hidden');
+            panContainer.style.transform = originalTransform;
+        }
+
+        async function exportImage() {
+            const origTransform = await prepareForExport();
+            const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
-            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true }).then(canvas => {
+
+            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
                 const link = document.createElement('a');
-                link.download = 'organograma-executivo.png';
+                link.download = 'organograma-cmaa.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                await restoreAfterExport(origTransform);
             });
         }
 
-        function exportPDF() {
-            const target = document.getElementById('pan-container');
+        async function exportPDF() {
+            const origTransform = await prepareForExport();
+            const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
-            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true }).then(canvas => {
+
+            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const imgWidth = 297;
-                const pageHeight = 210;
+                
+                const imgWidth = 297; // Largura A4 paisagem em mm
+                const pageHeight = 210; // Altura A4 paisagem em mm
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
                 let heightLeft = imgHeight;
                 let position = 0;
@@ -551,24 +593,30 @@
                     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pageHeight;
                 }
-                pdf.save('organograma-executivo.pdf');
+
+                pdf.save('organograma-cmaa.pdf');
+                await restoreAfterExport(origTransform);
             });
         }
 
-        function exportPPT() {
-            const target = document.getElementById('pan-container');
+        async function exportPPT() {
+            const origTransform = await prepareForExport();
+            const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '0F172A' : 'F1F5F9';
-            html2canvas(target, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', scale: 2, useCORS: true }).then(canvas => {
+
+            html2canvas(target, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', scale: 2, useCORS: true, scrollY: -window.scrollY }).then(async canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 let pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
                 let slide = pptx.addSlide();
                 slide.background = { color: bg };
                 slide.addImage({ data: imgData, x: 0.5, y: 0.5, w: '90%', h: '85%' });
-                pptx.writeFile({ fileName: 'organograma-executivo.pptx' });
+                pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
+                await restoreAfterExport(origTransform);
             });
         }
 
+        // Zoom & Pan
         function updateTransform() {
             panContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
         }
