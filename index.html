@@ -33,7 +33,7 @@
     <style>
         .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
         .tf-tree ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
-        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 10px 0 10px; }
+        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 12px 0 12px; }
         
         .tf-tree li::before, .tf-tree li::after {
             content: ''; position: absolute; top: 0; right: 50%;
@@ -50,11 +50,11 @@
             border-left: 2px solid #cbd5e1; width: 0; height: 24px;
         }
 
-        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 28px; }
-        .orientation-horizontal li { text-align: left; padding: 10px 0 0 28px; }
+        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 32px; }
+        .orientation-horizontal li { text-align: left; padding: 12px 0 0 32px; }
         .orientation-horizontal li::before, .orientation-horizontal li::after, .orientation-horizontal ul ul::before { display: none; }
 
-        .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 900px; margin: 0 auto; padding-top: 16px; }
+        .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; padding-top: 16px; }
 
         #viewport { cursor: grab; }
         #viewport:active { cursor: grabbing; }
@@ -73,7 +73,7 @@
 </head>
 <body id="app-body" class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- TELA DE LOGIN (FUNDO CLARO) -->
+    <!-- TELA DE LOGIN -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-md shadow-xl text-center">
             <img src="CMAA.png" alt="CMAA Logo" class="h-14 mx-auto mb-6 object-contain" onerror="this.style.display='none'">
@@ -168,23 +168,8 @@
 
     <!-- ÁREA PRINCIPAL -->
     <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
-        <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
-            <div id="tree-wrapper" class="flex flex-col items-center">
-                <!-- Cabeçalho Executivo para Exportação -->
-                <div id="export-header" class="hidden mb-8 w-full max-w-4xl bg-white border border-slate-200 rounded-xl p-6 shadow-md flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <img src="CMAA.png" alt="CMAA Logo" class="h-10 object-contain" onerror="this.style.display='none'">
-                        <div>
-                            <h2 class="text-base font-bold text-slate-800">Organograma Corporativo - Gente & Gestão</h2>
-                            <p class="text-xs text-slate-500">Companhia Moinhos Agrícolas e Arrendamentos</p>
-                        </div>
-                    </div>
-                    <div class="text-right text-xs text-slate-400 font-mono">
-                        Emitido em: <span id="export-date"></span>
-                    </div>
-                </div>
-
-                <!-- Árvore do Organograma -->
+        <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
+            <div id="tree-wrapper" class="flex flex-col items-center p-8">
                 <div id="tree-root" class="tf-tree">
                     <div class="text-center mt-20 text-slate-400">
                         <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
@@ -446,9 +431,9 @@
                         LEVEL ${String.fromCharCode(64 + node.level)}
                     </span>
                     ${fotoHTML}
-                    <div class="ml-3 text-left overflow-hidden">
-                        <h3 class="text-xs font-bold truncate leading-tight">${node.nome}</h3>
-                        <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium">${node.cargo}</p>
+                    <div class="ml-3 text-left overflow-hidden w-full">
+                        <h3 class="text-xs font-bold truncate leading-tight" title="${node.nome}">${node.nome}</h3>
+                        <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium" title="${node.cargo}">${node.cargo}</p>
                         <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-400 font-mono">
                             <span>#${node.numcad}</span>
                             <span>•</span>
@@ -471,8 +456,8 @@
             return `
                 <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-20 text-center cursor-pointer group">
                     <div class="relative">${fotoHTML}</div>
-                    <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block">${node.nome.split(' ')[0]}</span>
-                    <span class="text-[8px] text-slate-400 truncate w-full block">${node.cargo}</span>
+                    <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
+                    <span class="text-[8px] text-slate-400 truncate w-full block" title="${node.cargo}">${node.cargo}</span>
                 </div>`;
         }
 
@@ -534,23 +519,15 @@
             }
         }
 
-        // Funções de Exportação Otimizadas com Cabeçalho
+        // Funções de Exportação sem cortes
         async function prepareForExport() {
-            const header = document.getElementById('export-header');
-            const dateSpan = document.getElementById('export-date');
-            dateSpan.innerText = new Date().toLocaleDateString('pt-BR');
-            header.classList.remove('hidden');
-
-            // Resetar temporariamente zoom e posição para capturar a árvore inteira sem cortes
             const originalTransform = panContainer.style.transform;
             panContainer.style.transform = 'translate(0px, 0px) scale(1)';
-            await new Promise(resolve => setTimeout(resolve, 300)); // Aguarda renderização
+            await new Promise(resolve => setTimeout(resolve, 400));
             return originalTransform;
         }
 
         async function restoreAfterExport(originalTransform) {
-            const header = document.getElementById('export-header');
-            header.classList.add('hidden');
             panContainer.style.transform = originalTransform;
         }
 
@@ -578,8 +555,8 @@
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
                 
-                const imgWidth = 297; // Largura A4 paisagem em mm
-                const pageHeight = 210; // Altura A4 paisagem em mm
+                const imgWidth = 297;
+                const pageHeight = 210;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
                 let heightLeft = imgHeight;
                 let position = 0;
@@ -610,7 +587,24 @@
                 pptx.layout = 'LAYOUT_16x9';
                 let slide = pptx.addSlide();
                 slide.background = { color: bg };
-                slide.addImage({ data: imgData, x: 0.5, y: 0.5, w: '90%', h: '85%' });
+                
+                // Calcula proporção exata para o PPTx preencher o slide de forma responsiva sem cortar as pontas
+                const imgProps = pptx.getImageProperties(imgData);
+                const slideWidth = 13.333; // Largura do slide 16:9 em polegadas
+                const slideHeight = 7.5;   // Altura do slide 16:9 em polegadas
+                
+                let w = slideWidth - 1.0;
+                let h = (imgProps.h * w) / imgProps.w;
+                
+                if (h > (slideHeight - 1.0)) {
+                    h = slideHeight - 1.0;
+                    w = (imgProps.w * h) / imgProps.h;
+                }
+                
+                let x = (slideWidth - w) / 2;
+                let y = (slideHeight - h) / 2;
+
+                slide.addImage({ data: imgData, x: x, y: y, w: w, h: h });
                 pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
                 await restoreAfterExport(origTransform);
             });
