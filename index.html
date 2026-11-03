@@ -73,33 +73,33 @@
 </head>
 <body id="app-body" class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- TELA DE LOGIN -->
-    <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 w-full max-w-md shadow-2xl text-center">
+    <!-- TELA DE LOGIN (FUNDO CLARO) -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-md shadow-xl text-center">
             <img src="CMAA.png" alt="CMAA Logo" class="h-14 mx-auto mb-6 object-contain" onerror="this.style.display='none'">
-            <h2 class="text-lg font-bold text-white mb-1">Gente & Gestão</h2>
-            <p class="text-xs text-slate-400 mb-6">Acesse o sistema de organograma corporativo</p>
+            <h2 class="text-lg font-bold text-slate-800 mb-1">Gente & Gestão</h2>
+            <p class="text-xs text-slate-500 mb-6">Acesse o sistema de organograma corporativo</p>
 
             <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Usuário / Matrícula</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Usuário / Matrícula</label>
                     <input type="text" id="loginUser" required placeholder="Digite sua matrícula..." 
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Senha</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Senha</label>
                     <input type="password" id="loginPass" required placeholder="••••••••" 
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500">
                 </div>
-                <div id="loginError" class="text-red-400 text-xs hidden text-center">Credenciais inválidas. Tente novamente.</div>
-                <button type="submit" id="loginBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-xs transition shadow-lg shadow-emerald-950/50">
+                <div id="loginError" class="text-red-600 text-xs hidden text-center">Credenciais inválidas. Tente novamente.</div>
+                <button type="submit" id="loginBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-xs transition shadow-md shadow-emerald-900/10">
                     Entrar no Sistema
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- NAVBAR TOPO (Oculto até autenticar) -->
+    <!-- NAVBAR TOPO -->
     <header class="h-16 border-b border-slate-200 bg-white/90 backdrop-blur px-6 flex items-center justify-between z-10 shrink-0 gap-4 shadow-sm">
         <div class="flex items-center gap-3 shrink-0">
             <img src="CMAA.png" alt="CMAA Logo" class="h-8 object-contain" onerror="this.style.display='none'">
@@ -210,13 +210,11 @@
                 });
 
                 if (response.ok) {
-                    // Login bem-sucedido
                     document.getElementById('login-screen').style.display = 'none';
                 } else {
                     throw new Error('Falha na autenticação');
                 }
             } catch (error) {
-                // Modo Flexível de Teste: Se a API falhar por CORS/rede em ambiente local, libera o acesso para homologação
                 console.warn('Aviso: Conexão com API falhou ou bloqueada por CORS. Liberando acesso para visualização local.');
                 document.getElementById('login-screen').style.display = 'none';
             } finally {
