@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +13,10 @@
                 extend: {
                     colors: {
                         cmaa: {
-                            bg: '#0b0f17',
-                            card: '#151c28',
-                            border: '#232d3f',
-                            emerald: '#10b981'
+                            bg: '#f1f5f9',
+                            card: '#ffffff',
+                            border: '#e2e8f0',
+                            emerald: '#059669'
                         }
                     }
                 }
@@ -33,72 +33,90 @@
     <style>
         .tf-tree * { box-sizing: border-box; margin: 0; padding: 0; }
         .tf-tree ul { display: flex; justify-content: center; position: relative; padding-top: 24px; transition: all 0.3s; }
-        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 8px 0 8px; }
+        .tf-tree li { text-align: center; list-style-type: none; position: relative; padding: 24px 10px 0 10px; }
+        
+        /* Conectores Limpos */
         .tf-tree li::before, .tf-tree li::after {
             content: ''; position: absolute; top: 0; right: 50%;
-            border-top: 2px solid #334155; width: 50%; height: 24px;
+            border-top: 2px solid #cbd5e1; width: 50%; height: 24px;
         }
-        .tf-tree li::after { right: auto; left: 50%; border-left: 2px solid #334155; }
+        .tf-tree li::after { right: auto; left: 50%; border-left: 2px solid #cbd5e1; }
         .tf-tree li:only-child::after, .tf-tree li:only-child::before { display: none; }
         .tf-tree li:only-child { padding-top: 0; }
         .tf-tree li:first-child::before, .tf-tree li:last-child::after { border: 0 none; }
-        .tf-tree li:last-child::before { border-right: 2px solid #334155; border-radius: 0 8px 0 0; }
+        .tf-tree li:last-child::before { border-right: 2px solid #cbd5e1; border-radius: 0 8px 0 0; }
         .tf-tree li:first-child::after { border-radius: 8px 0 0 0; }
         .tf-tree ul ul::before {
             content: ''; position: absolute; top: 0; left: 50%;
-            border-left: 2px solid #334155; width: 0; height: 24px;
+            border-left: 2px solid #cbd5e1; width: 0; height: 24px;
         }
-        
-        /* Modos de Orientação */
-        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 24px; }
-        .orientation-horizontal li { text-align: left; padding: 8px 0 0 24px; }
-        .orientation-horizontal li::before, .orientation-horizontal li::after { display: none; }
-        .orientation-horizontal ul ul::before { display: none; }
 
-        .grid-layout { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding-top: 16px; }
+        /* Orientação Horizontal */
+        .orientation-horizontal ul { flex-direction: column; align-items: flex-start; padding-top: 0; padding-left: 28px; }
+        .orientation-horizontal li { text-align: left; padding: 10px 0 0 28px; }
+        .orientation-horizontal li::before, .orientation-horizontal li::after, .orientation-horizontal ul ul::before { display: none; }
+
+        /* Grade Compacta para Liderados */
+        .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 900px; margin: 0 auto; padding-top: 16px; }
 
         #viewport { cursor: grab; }
         #viewport:active { cursor: grabbing; }
+
+        /* Cores de Nível Dinâmicas */
+        .lvl-badge-1 { background-color: #0d9488; color: white; }
+        .lvl-ring-1 { border-color: #0d9488; }
+        
+        .lvl-badge-2 { background-color: #16a34a; color: white; }
+        .lvl-ring-2 { border-color: #16a34a; }
+        
+        .lvl-badge-3 { background-color: #d97706; color: white; }
+        .lvl-ring-3 { border-color: #d97706; }
+        
+        .lvl-badge-4 { background-color: #2563eb; color: white; }
+        .lvl-ring-4 { border-color: #2563eb; }
+
+        .lvl-badge-default { background-color: #64748b; color: white; }
+        .lvl-ring-default { border-color: #64748b; }
     </style>
 </head>
-<body class="bg-cmaa-bg text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
+<body id="app-body" class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans overflow-hidden">
 
     <!-- Navbar Topo -->
-    <header class="h-16 border-b border-cmaa-border bg-cmaa-card/80 backdrop-blur px-6 flex items-center justify-between z-10 shrink-0 gap-4">
+    <header class="h-16 border-b border-slate-200 bg-white/90 backdrop-blur px-6 flex items-center justify-between z-10 shrink-0 gap-4 shadow-sm">
         <div class="flex items-center gap-3 shrink-0">
-            <div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
+            <div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-600">
                 <i data-lucide="network" class="w-5 h-5"></i>
             </div>
             <div>
-                <h1 class="font-bold text-base tracking-wide text-white">Organograma Avançado</h1>
-                <p class="text-xs text-slate-400">Gente & Gestão</p>
+                <h1 class="font-bold text-base tracking-wide text-slate-800">Organograma Executivo</h1>
+                <p class="text-xs text-slate-500">Gente & Gestão</p>
             </div>
         </div>
 
         <!-- Controles, Filtros e Exportação -->
-        <div class="flex items-center gap-2.5 flex-wrap justify-end">
+        <div class="flex items-center gap-2 flex-wrap justify-end">
             <!-- Pesquisa -->
-            <div class="relative w-40">
+            <div class="relative w-36">
                 <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 <input type="text" id="searchInput" placeholder="Pesquisar..." 
-                    class="w-full bg-cmaa-bg border border-cmaa-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+                    class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                     oninput="filterTree()">
             </div>
 
-            <!-- Formato de Visualização -->
-            <select id="layoutFormat" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
-                <option value="tree">Árvore Completa</option>
-                <option value="grid">Grade Compacta</option>
+            <!-- Formato do Layout -->
+            <select id="layoutFormat" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
+                <option value="tree">Árvore Expandida</option>
+                <option value="compact">Grade Compacta (Imagem Única)</option>
             </select>
 
             <!-- Orientação -->
-            <select id="orientationSelect" onchange="changeOrientation()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+            <select id="orientationSelect" onchange="changeOrientation()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
                 <option value="vertical">Vertical</option>
                 <option value="horizontal">Horizontal</option>
             </select>
 
             <!-- Ordenação -->
-            <select id="sortBy" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+            <select id="sortBy" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
                 <option value="default">Ordem Padrão</option>
                 <option value="name">Nome (A-Z)</option>
                 <option value="hc">Maior Headcount</option>
@@ -106,44 +124,49 @@
             </select>
 
             <!-- Filtro de Nível -->
-            <select id="levelFilter" onchange="filterTree()" class="bg-cmaa-bg border border-cmaa-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition">
-                <option value="all">Todos os Níveis</option>
+            <select id="levelFilter" onchange="filterTree()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
+                <option value="all">Todos Níveis</option>
             </select>
+
+            <!-- Alternar Tema -->
+            <button onclick="toggleTheme()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 p-1.5 rounded-lg text-slate-600 transition" title="Alternar Tema Claro/Escuro">
+                <i data-lucide="sun" id="theme-icon" class="w-4 h-4"></i>
+            </button>
 
             <!-- Menu Exportar -->
             <div class="relative group">
-                <button class="bg-slate-800 hover:bg-slate-700 border border-cmaa-border text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                <button class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar
                 </button>
-                <div class="absolute right-0 mt-1 w-36 bg-cmaa-card border border-cmaa-border rounded-lg shadow-xl hidden group-hover:block z-50 overflow-hidden">
-                    <button onclick="exportPDF()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
-                    <button onclick="exportImage()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="image" class="w-3.5 h-3.5"></i> Imagem (PNG)</button>
-                    <button onclick="exportPPT()" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-emerald-600/20 hover:text-emerald-400 flex items-center gap-2"><i data-lucide="presentation" class="w-3.5 h-3.5"></i> PowerPoint</button>
+                <div class="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-lg shadow-xl hidden group-hover:block z-50 overflow-hidden">
+                    <button onclick="exportPDF()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
+                    <button onclick="exportImage()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="image" class="w-3.5 h-3.5"></i> Imagem (PNG)</button>
+                    <button onclick="exportPPT()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="presentation" class="w-3.5 h-3.5"></i> PowerPoint</button>
                 </div>
             </div>
 
             <!-- Importar CSV -->
-            <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
+            <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-emerald-900/20">
                 <i data-lucide="upload" class="w-3.5 h-3.5"></i> CSV
                 <input type="file" id="csvFileInput" accept=".csv" class="hidden">
             </label>
 
             <!-- Zoom -->
-            <div class="flex items-center bg-cmaa-bg border border-cmaa-border rounded-lg p-0.5 gap-0.5">
-                <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Reduzir"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
-                <button onclick="resetZoom()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Resetar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
-                <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition" title="Aumentar"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
+            <div class="flex items-center bg-slate-50 border border-slate-300 rounded-lg p-0.5 gap-0.5">
+                <button onclick="zoomOut()" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 transition" title="Reduzir"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
+                <button onclick="resetZoom()" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 transition" title="Resetar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+                <button onclick="zoomIn()" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 transition" title="Aumentar"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
             </div>
         </div>
     </header>
 
     <!-- Área Principal -->
-    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-cmaa-bg">
+    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-12 transition-transform duration-100 ease-out">
             <div id="tree-root" class="tf-tree">
-                <div class="text-center mt-20 text-slate-500">
+                <div class="text-center mt-20 text-slate-400">
                     <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-                    <p class="text-sm font-medium">Carregue um arquivo CSV com as colunas:<br><code class="text-xs text-emerald-400">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
+                    <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, FOTO</code></p>
                 </div>
             </div>
         </div>
@@ -154,6 +177,7 @@
 
         let globalData = [];
         let zoomLevel = 1, isPanning = false, startX = 0, startY = 0, translateX = 0, translateY = 0;
+        let isDarkMode = false;
         const viewport = document.getElementById('viewport');
         const panContainer = document.getElementById('pan-container');
 
@@ -169,6 +193,27 @@
                 }
             });
         });
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.getElementById('app-body');
+            const viewport = document.getElementById('viewport');
+            
+            if (isDarkMode) {
+                body.classList.add('dark');
+                body.classList.remove('bg-slate-100');
+                body.classList.add('bg-slate-900');
+                viewport.classList.remove('bg-slate-100');
+                viewport.classList.add('bg-slate-900');
+            } else {
+                body.classList.remove('dark');
+                body.classList.remove('bg-slate-900');
+                body.classList.add('bg-slate-100');
+                viewport.classList.remove('bg-slate-900');
+                viewport.classList.add('bg-slate-100');
+            }
+            filterTree();
+        }
 
         function initApp() {
             const map = {};
@@ -217,9 +262,9 @@
             roots.forEach(findMaxDepth);
 
             const levelSelect = document.getElementById('levelFilter');
-            levelSelect.innerHTML = '<option value="all">Todos os Níveis</option>';
+            levelSelect.innerHTML = '<option value="all">Todos Níveis</option>';
             for (let i = 1; i <= maxDepth; i++) {
-                levelSelect.innerHTML += `<option value="${i}">Até o Nível ${i}</option>`;
+                levelSelect.innerHTML += `<option value="${i}">Até Nível ${i}</option>`;
             }
 
             filterTree();
@@ -306,40 +351,73 @@
             renderTree(roots, layoutFormat);
         }
 
-        function renderCard(node) {
+        // Renderização do Cartão Pill (Inspirado no Design do Mockup)
+        function renderPillCard(node) {
+            const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
+            const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
+
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/50 shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                ? `<img src="${node.foto}" class="w-12 h-12 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
+                : `<div class="w-12 h-12 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-6 h-6"></i></div>`;
+
+            const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
 
             return `
-                <div class="inline-block bg-cmaa-card border border-cmaa-border hover:border-emerald-500/65 transition-all rounded-xl p-3 w-60 text-left shadow-lg relative">
-                    <div class="flex items-center gap-3">
-                        ${fotoHTML}
-                        <div class="overflow-hidden">
-                            <span class="text-[10px] font-mono font-bold text-emerald-400 block tracking-wider">#${node.numcad}</span>
-                            <h3 class="text-xs font-bold text-white truncate leading-tight">${node.nome}</h3>
-                            <p class="text-[10px] text-slate-400 truncate mt-0.5">${node.cargo}</p>
-                        </div>
-                    </div>
-                    <div class="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
-                        <span>CC: <strong class="text-slate-300">${node.cc}</strong></span>
-                        <div class="flex gap-2">
-                            <span class="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400 font-mono">Dir: ${node.hcDirect}</span>
-                            <span class="bg-slate-800 px-1.5 py-0.5 rounded text-cyan-400 font-mono">Ind: ${node.hcIndirect}</span>
+                <div class="relative inline-flex items-center ${cardBg} border rounded-full pl-2 pr-5 py-2 shadow-md w-64 hover:shadow-xl transition-all">
+                    <!-- Badge de Nível na Lateral -->
+                    <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
+                        LEVEL ${String.fromCharCode(64 + node.level)}
+                    </span>
+                    
+                    ${fotoHTML}
+                    
+                    <div class="ml-3 text-left overflow-hidden">
+                        <h3 class="text-xs font-bold truncate leading-tight">${node.nome}</h3>
+                        <p class="text-[10px] text-slate-400 truncate mt-0.5 font-medium">${node.cargo}</p>
+                        <div class="flex items-center gap-2 mt-1 text-[9px] text-slate-400 font-mono">
+                            <span>#${node.numcad}</span>
+                            <span>•</span>
+                            <span class="text-emerald-600 font-bold">Dir: ${node.hcDirect}</span>
                         </div>
                     </div>
                 </div>`;
         }
 
+        // Renderização do Círculo Compacto (Base do Diagrama da Imagem)
+        function renderCircleCard(node) {
+            const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
+            const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
+
+            const hasFoto = node.foto && node.foto.length > 5;
+            const fotoHTML = hasFoto 
+                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${ringClass} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
+                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
+
+            const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
+
+            return `
+                <div class="inline-flex flex-col items-center w-20 text-center group" title="${node.nome} - ${node.cargo}">
+                    <div class="relative">
+                        ${fotoHTML}
+                    </div>
+                    <span class="text-[10px] font-bold ${textColor} truncate w-full mt-1.5 block">${node.nome.split(' ')[0]}</span>
+                    <span class="text-[8px] text-slate-400 truncate w-full block">${node.cargo}</span>
+                </div>`;
+        }
+
         function renderNodeHTML(node, layoutFormat) {
-            let html = `<li>${renderCard(node)}`;
+            // Se for folha sem filhos e no modo compacto, desenha o avatar circular compacto
+            const isLeaf = node.children.length === 0;
+            const useCircle = layoutFormat === 'compact' && isLeaf;
+
+            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node)}`;
 
             if (node.children.length > 0) {
-                if (layoutFormat === 'grid') {
-                    html += `<div class="grid-layout">`;
+                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
+                    html += `<div class="grid-compact">`;
                     node.children.forEach(child => {
-                        html += `<div>${renderNodeHTML(child, layoutFormat)}</div>`;
+                        html += `<div>${renderCircleCard(child)}</div>`;
                     });
                     html += `</div>`;
                 } else {
@@ -357,7 +435,7 @@
         function renderTree(roots, layoutFormat) {
             const container = document.getElementById('tree-root');
             if (roots.length === 0) {
-                container.innerHTML = `<p class="text-red-400 text-sm text-center mt-10">Nenhum registo encontrado com os filtros aplicados.</p>`;
+                container.innerHTML = `<p class="text-red-500 text-sm text-center mt-10">Nenhum registro encontrado com os filtros selecionados.</p>`;
                 return;
             }
 
@@ -386,12 +464,13 @@
             }
         }
 
-        // Exportações
+        // Funções de Exportação
         function exportImage() {
             const target = document.getElementById('pan-container');
-            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+            const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
+            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'organograma-cmaa.png';
+                link.download = 'organograma-executivo.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             });
@@ -399,7 +478,8 @@
 
         function exportPDF() {
             const target = document.getElementById('pan-container');
-            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+            const bg = isDarkMode ? '#0f172a' : '#f1f5f9';
+            html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -418,20 +498,21 @@
                     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pageHeight;
                 }
-                pdf.save('organograma-cmaa.pdf');
+                pdf.save('organograma-executivo.pdf');
             });
         }
 
         function exportPPT() {
             const target = document.getElementById('pan-container');
-            html2canvas(target, { backgroundColor: '#0b0f17', scale: 2, useCORS: true }).then(canvas => {
+            const bg = isDarkMode ? '0F172A' : 'F1F5F9';
+            html2canvas(target, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9', scale: 2, useCORS: true }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 let pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
                 let slide = pptx.addSlide();
-                slide.background = { color: '0B0F17' };
+                slide.background = { color: bg };
                 slide.addImage({ data: imgData, x: 0.5, y: 0.5, w: '90%', h: '85%' });
-                pptx.writeFile({ fileName: 'organograma-cmaa.pptx' });
+                pptx.writeFile({ fileName: 'organograma-executivo.pptx' });
             });
         }
 
