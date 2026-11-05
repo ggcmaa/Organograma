@@ -245,6 +245,7 @@
         lucide.createIcons();
 
         let globalData = [];
+        let currentFilteredRoots = []; // Mantém a última estrutura filtrada exibida em tela
         let collapsedNodes = new Set();
         let selectedLevels = new Set();
         let maxGlobalDepth = 0;
@@ -562,7 +563,21 @@
                 roots = matchedNode ? [matchedNode] : [];
             }
 
-            renderTree(roots, layoutFormat);
+            // Omitir nós colapsados para a renderização e para o PPT refletir exatamente a tela
+            function pruneCollapsed(nodes) {
+                return nodes.map(node => {
+                    let copy = { ...node };
+                    if (collapsedNodes.has(copy.numcad)) {
+                        copy.children = [];
+                    } else {
+                        copy.children = pruneCollapsed(copy.children);
+                    }
+                    return copy;
+                });
+            }
+
+            currentFilteredRoots = pruneCollapsed(roots);
+            renderTree(currentFilteredRoots, layoutFormat);
         }
 
         function renderPillCard(node, isCompactMode = false) {
@@ -790,10 +805,10 @@
             });
         }
 
-        // Exportação PowerPoint 100% Editável Corrigida
+        // Exportação PowerPoint 100% Editável refletindo estritamente a árvore filtrada em tela
         async function exportPPT() {
-            if (globalData.length === 0) {
-                alert("Nenhum dado carregado para exportar.");
+            if (globalData.length === 0 || currentFilteredRoots.length === 0) {
+                alert("Nenhum dado visível para exportar.");
                 return;
             }
 
@@ -804,50 +819,13 @@
                 slide.background = { color: isDarkMode ? '0F172A' : 'F1F5F9' };
 
                 let levelMap = {};
-                function gatherNodesByLevel(node) {
+                function gatherFilteredNodes(node) {
                     if (!levelMap[node.level]) levelMap[node.level] = [];
                     levelMap[node.level].push(node);
-                    node.children.forEach(gatherNodesByLevel);
+                    node.children.forEach(gatherFilteredNodes);
                 }
 
-                const map = {};
-                globalData.forEach(row => {
-                    const numcad = String(row.NUMCAD || '').trim();
-                    if (!numcad) return;
-                    map[numcad] = {
-                        numcad: numcad,
-                        nome: row.NOME || 'Sem Nome',
-                        numlid: String(row.NUMLID || '').trim(),
-                        cargo: row.CARGO || 'Cargo não informado',
-                        subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
-                        children: [],
-                        level: 1
-                    };
-                });
-
-                let roots = [];
-                Object.values(map).forEach(node => {
-                    if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
-                        map[node.numlid].children.push(node);
-                    } else {
-                        roots.push(node);
-                    }
-                });
-
-                function calculateMetrics(node, currentLevel = 1) {
-                    node.level = currentLevel;
-                    node.children.forEach(child => calculateMetrics(child, currentLevel + 1));
-                }
-                roots.forEach(root => calculateMetrics(root, 1));
-
-                function filterLevelsForPPT(nodes) {
-                    return nodes.filter(node => {
-                        node.children = filterLevelsForPPT(node.children);
-                        return selectedLevels.has(node.level) || node.children.length > 0;
-                    });
-                }
-                let filteredRoots = filterLevelsForPPT(roots);
-                filteredRoots.forEach(gatherNodesByLevel);
+                currentFilteredRoots.forEach(gatherFilteredNodes);
 
                 const cardW = 3.0;
                 const cardH = 0.9;
@@ -869,6 +847,7 @@
 
                         if (posY > 6.8) return;
 
+                        // Caixa editável (Forma geométrica do PowerPoint)
                         slide.addShape(pptx.ShapeType.roundRect, {
                             x: posX,
                             y: posY,
@@ -878,9 +857,10 @@
                             line: { color: 'CBD5E1', width: 1 }
                         });
 
+                        // Texto editável associado
                         slide.addText([
                             { text: node.nome, options: { fontSize: 10, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B', breakLine: true } },
-                            { text: node.cargo, options: { fontSize: 8, color: '64748B' } }
+                            { text: node.cargo + ` (Dir: ${node.hcDirect} | Ind: ${node.hcIndirect})`, options: { fontSize: 8, color: '64748B' } }
                         ], {
                             x: posX + 0.1,
                             y: posY + 0.1,
@@ -892,7 +872,7 @@
                     });
                 });
 
-                await pptx.writeFile({ fileName: 'organograma-editavel-cmaa.pptx' });
+                await pptx.writeFile({ fileName: 'organograma-filtrado-editavel-cmaa.pptx' });
             } catch (err) {
                 console.error("Erro detalhado PPTX:", err);
                 alert("Erro ao gerar o PowerPoint editável. Verifique o console.");
