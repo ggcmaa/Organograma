@@ -98,7 +98,7 @@
 
         .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; padding-top: 16px; }
 
-        #viewport { cursor: grab; }
+        #viewport { cursor: grab; user-select: none; }
         #viewport:active { cursor: grabbing; }
 
         .lvl-badge-1 { background-color: #0d9488; color: white; }
@@ -333,7 +333,7 @@
         let maxGlobalDepth = 0;
         let zoomLevel = 1, isPanning = false, startX = 0, startY = 0, translateX = 0, translateY = 0;
         let isDarkMode = false;
-        const viewport = document.getElementById('viewport');
+        const viewport = document.getElementById('tabTreeContainer');
         const panContainer = document.getElementById('pan-container');
 
         // TROCA DE ABAS
@@ -1079,7 +1079,7 @@
             }
         }
 
-        // Zoom & Pan
+        // ZOOM & PAN COM BOTÃO ESQUERDO E BOTÃO DIREITO DO MOUSE
         function updateTransform() {
             panContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
         }
@@ -1087,9 +1087,30 @@
         function zoomOut() { zoomLevel = Math.max(zoomLevel - 0.15, 0.3); updateTransform(); }
         function resetZoom() { zoomLevel = 1; translateX = 0; translateY = 0; updateTransform(); }
 
-        viewport.addEventListener('mousedown', (e) => { isPanning = true; startX = e.clientX - translateX; startY = e.clientY - translateY; });
-        window.addEventListener('mousemove', (e) => { if (!isPanning) return; translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); });
-        window.addEventListener('mouseup', () => { isPanning = false; });
+        // EVITAR ABRIR O MENU DE CONTEXTO DO BOTÃO DIREITO DENTRO DO CANVAS
+        viewport.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        viewport.addEventListener('mousedown', (e) => {
+            // Aceita Botão Esquerdo (0) e Botão Direito (2) para Pan/Arrastar
+            if (e.button === 0 || e.button === 2) {
+                isPanning = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+        });
     </script>
 </body>
 </html>
