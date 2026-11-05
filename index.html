@@ -207,10 +207,10 @@
                 <button class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar
                 </button>
-                <div class="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-xl hidden group-hover:block z-50 overflow-hidden">
+                <div class="absolute right-0 mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-xl hidden group-hover:block z-50 overflow-hidden">
                     <button onclick="exportPDF()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
                     <button onclick="exportImage()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="image" class="w-3.5 h-3.5"></i> Imagem (PNG)</button>
-                    <button onclick="exportPPT()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="presentation" class="w-3.5 h-3.5"></i> PowerPoint (Editável)</button>
+                    <button onclick="exportPPT()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-2"><i data-lucide="presentation" class="w-3.5 h-3.5"></i> PowerPoint (Visual)</button>
                 </div>
             </div>
 
@@ -804,79 +804,51 @@
             });
         }
 
-        // Exportação PowerPoint Editável com grade organizada por nível hierárquico e blocos limpos
+        // Exportação PowerPoint por Renderização de Imagem em Alta Resolução (100% fiel à tela, sem erro e sem quebra de formato)
         async function exportPPT() {
             if (globalData.length === 0 || currentFilteredRoots.length === 0) {
                 alert("Nenhum dado visível para exportar.");
                 return;
             }
 
+            const prep = await prepareForExport();
+            const target = document.getElementById('tree-wrapper');
+            const bg = isDarkMode ? '#0F172A' : '#F1F5F9';
+
             try {
+                const canvas = await html2canvas(target, {
+                    backgroundColor: bg,
+                    scale: 2,
+                    useCORS: true,
+                    scrollY: -window.scrollY,
+                    windowWidth: target.scrollWidth + 100,
+                    windowHeight: target.scrollHeight + 100
+                });
+
+                const imgBase64 = canvas.toDataURL('image/png');
+
                 let pptx = new window.PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
+
                 let slide = pptx.addSlide();
                 slide.background = { color: isDarkMode ? '0F172A' : 'F1F5F9' };
 
-                let levelMap = {};
-                function gatherFilteredNodes(node) {
-                    if (!levelMap[node.level]) levelMap[node.level] = [];
-                    levelMap[node.level].push(node);
-                    node.children.forEach(gatherFilteredNodes);
-                }
-
-                currentFilteredRoots.forEach(gatherFilteredNodes);
-
-                const cardW = 3.2;
-                const cardH = 0.95;
-                const gapX = 0.4;
-
-                Object.keys(levelMap).sort((a,b)=>a-b).forEach((lvl, lvlIdx) => {
-                    const nodesInLvl = levelMap[lvl];
-                    let maxPerRow = 4;
-                    
-                    nodesInLvl.forEach((node, idx) => {
-                        let rowIdx = Math.floor(idx / maxPerRow);
-                        let colIdx = idx % maxPerRow;
-                        
-                        let startX = (13.333 - (Math.min(nodesInLvl.length - (rowIdx * maxPerRow), maxPerRow) * (cardW + gapX) - gapX)) / 2;
-                        if (startX < 0.5) startX = 0.5;
-
-                        let posX = startX + (colIdx * (cardW + gapX));
-                        let posY = 0.8 + (lvlIdx * 1.3) + (rowIdx * 1.1);
-
-                        if (posY > 6.8) return;
-
-                        // Retângulo editável (fundo do card)
-                        slide.addShape(pptx.ShapeType.roundRect, {
-                            x: posX,
-                            y: posY,
-                            w: cardW,
-                            h: cardH,
-                            fill: { color: isDarkMode ? '1E293B' : 'FFFFFF' },
-                            line: { color: 'CBD5E1', width: 1 }
-                        });
-
-                        // Texto formatado e editável (Nome, Cargo, Subprocesso e Headcount)
-                        slide.addText([
-                            { text: node.nome + '\n', options: { fontSize: 10, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B' } },
-                            { text: node.cargo + '\n', options: { fontSize: 8, color: isDarkMode ? '94A3B8' : '64748B' } },
-                            { text: `[${node.subprocesso}] • Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}`, options: { fontSize: 7, color: '059669', bold: true } }
-                        ], {
-                            x: posX + 0.15,
-                            y: posY + 0.08,
-                            w: cardW - 0.3,
-                            h: cardH - 0.15,
-                            align: 'left',
-                            valign: 'middle',
-                            margin: 0
-                        });
-                    });
+                // Inserção da imagem mantendo proporção ideal no slide 16:9 (13.33 x 7.5 polegadas)
+                slide.addImage({
+                    data: imgBase64,
+                    x: 0.3,
+                    y: 0.3,
+                    w: 12.73,
+                    h: 6.9,
+                    sizing: { type: 'contain', w: 12.73, h: 6.9 }
                 });
 
-                await pptx.writeFile({ fileName: 'organograma-editavel-cmaa.pptx' });
+                await pptx.writeFile({ fileName: 'organograma-executivo-cmaa.pptx' });
             } catch (err) {
-                console.error("Erro detalhado PPTX:", err);
-                alert("Erro ao gerar o PowerPoint editável. Verifique o console.");
+                console.error("Erro ao exportar PPTX:", err);
+                alert("Erro ao gerar o PowerPoint visual. Verifique o console.");
+            } finally {
+                await restoreAfterExport(prep);
             }
         }
 
