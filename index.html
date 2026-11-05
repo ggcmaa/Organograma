@@ -808,7 +808,7 @@
             const hasChildren = node.children.length > 0;
 
             let toggleIndicator = '';
-            if (hasChildren && !isEditor) {
+            if (hasChildren) {
                 const iconName = isCollapsed ? 'chevron-right' : 'chevron-down';
                 const labelText = isCollapsed ? `+${node.hcIndirect}` : node.hcDirect;
                 toggleIndicator = `
@@ -830,7 +830,7 @@
             const hcHTML = showHC ? `<span>•</span><span class="text-emerald-600 font-bold" title="HC Direto / Indireto">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>` : '';
 
             return `
-                <div ${!isEditor ? `onclick="toggleCollapse('${node.numcad}')"` : ''} class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
                     ${actionButtonsHTML}
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
                         L${node.level}
@@ -881,7 +881,7 @@
                 </div>`;
         }
 
-        function renderCircleCard(node) {
+        function renderCircleCard(node, isEditor = false) {
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
@@ -890,8 +890,16 @@
 
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
+            const actionButtonsHTML = isEditor ? `
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900/90 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                    <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-1 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                    <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-1 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                    <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-1 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                </div>` : '';
+
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="inline-flex flex-col items-center w-24 text-center cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-24 text-center cursor-pointer group">
+                    ${actionButtonsHTML}
                     <div class="relative">${fotoHTML}</div>
                     <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
                     <span class="text-[8px] text-slate-400 break-words w-full block" title="${node.cargo}">${node.cargo}</span>
@@ -901,21 +909,21 @@
 
         function renderNodeHTML(node, layoutFormat, isEditor = false) {
             const isLeaf = node.children.length === 0;
-            const useCircle = layoutFormat === 'compact' && isLeaf && !isEditor;
+            const useCircle = layoutFormat === 'compact' && isLeaf;
             const isCompact = layoutFormat === 'horizontal-compact';
-            const isCollapsed = collapsedNodes.has(node.numcad) && !isEditor;
+            const isCollapsed = collapsedNodes.has(node.numcad);
 
-            if (node.level > 6 && node.children.length > 0 && !isCollapsed && !isEditor) {
+            if (node.level > 6 && node.children.length > 0 && !isCollapsed) {
                 return `<li>${renderPillCard(node, isCompact, isEditor)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
             }
 
-            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node, isCompact, isEditor)}`;
+            let html = `<li>${useCircle ? renderCircleCard(node, isEditor) : renderPillCard(node, isCompact, isEditor)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
-                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0) && !isEditor) {
+                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
                     html += `<div class="grid-compact">`;
                     node.children.forEach(child => {
-                        html += `<div>${renderCircleCard(child)}</div>`;
+                        html += `<div>${renderCircleCard(child, isEditor)}</div>`;
                     });
                     html += `</div>`;
                 } else {
@@ -962,7 +970,13 @@
                 return;
             }
 
-            container.className = layoutFormat === 'horizontal' ? 'tf-tree layout-horizontal' : 'tf-tree layout-vertical';
+            if (layoutFormat === 'horizontal') {
+                container.className = 'tf-tree layout-horizontal';
+            } else if (layoutFormat === 'horizontal-compact') {
+                container.className = 'tf-tree layout-horizontal-compact';
+            } else {
+                container.className = 'tf-tree layout-vertical';
+            }
 
             let html = '<ul>';
             roots.forEach(root => {
@@ -1116,7 +1130,7 @@
                 if (e.button === 0 || e.button === 2) {
                     isPanning = true;
                     startX = e.clientX - translateX;
-                    startY = e.clientY - translateY;
+                    startY = e.clientY - startY;
                 }
             });
         });
