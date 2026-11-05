@@ -141,6 +141,45 @@
         </div>
     </div>
 
+    <!-- MODAL DE EDIÇÃO DE NÓS (INSERÇÃO / MANIPULAÇÃO) -->
+    <div id="nodeModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 id="modalTitle" class="text-sm font-bold text-slate-800">Inserir Novo Colaborador</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="nodeForm" onsubmit="handleFormSubmit(event)" class="space-y-3 text-left">
+                <input type="hidden" id="formOriginalNumcad">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Matrícula (NUMCAD)</label>
+                    <input type="text" id="formNumcad" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo</label>
+                    <input type="text" id="formNome" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cargo</label>
+                    <input type="text" id="formCargo" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Líder Direto (NUMLID)</label>
+                    <select id="formNumlid" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                        <!-- Preenchido via script -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Subprocesso</label>
+                    <input type="text" id="formSubprocesso" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal()" class="px-3.5 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-500 shadow">Salvar Ajustes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- NAVBAR TOPO -->
     <header class="h-16 border-b border-slate-200 bg-white/90 backdrop-blur px-6 flex items-center justify-between z-10 shrink-0 gap-4 shadow-sm">
         <div class="flex items-center gap-3 shrink-0">
@@ -149,6 +188,16 @@
                 <h1 class="font-bold text-sm tracking-wide text-slate-800">Organograma Executivo</h1>
                 <p class="text-[10px] text-slate-500">Gente & Gestão</p>
             </div>
+        </div>
+
+        <!-- SELETOR DE ABAS DA APLICAÇÃO -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button onclick="switchTab('tree')" id="tabBtnTree" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 bg-white text-emerald-700 shadow-sm">
+                <i data-lucide="git-merge" class="w-3.5 h-3.5"></i> Visualização Árvore
+            </button>
+            <button onclick="switchTab('editor')" id="tabBtnEditor" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 text-slate-600 hover:text-slate-900">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Editor de Hierarquia
+            </button>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -227,8 +276,8 @@
         </div>
     </header>
 
-    <!-- ÁREA PRINCIPAL -->
-    <main id="viewport" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
+    <!-- ABA 1: VISUALIZAÇÃO DA ÁRVORE DO ORGANOGRAMA -->
+    <main id="tabTreeContainer" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
             <div id="tree-wrapper" class="flex flex-col items-center p-8 bg-transparent">
                 <div id="tree-root" class="tf-tree layout-vertical">
@@ -237,6 +286,39 @@
                         <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, SUBPROCESSO, FOTO</code></p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ABA 2: EDITOR E MANIPULAÇÃO DE HIERARQUIA -->
+    <main id="tabEditorContainer" class="flex-1 overflow-y-auto p-8 hidden bg-slate-50">
+        <div class="max-w-5xl mx-auto space-y-6">
+            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Editor de Hierarquia (Manipulação de Nós)</h2>
+                    <p class="text-xs text-slate-500">Altere o líder direto de qualquer colaborador, adicione cargos ou remova caixas temporariamente antes de gerar a apresentação no PowerPoint.</p>
+                </div>
+                <button onclick="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2 shadow">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Inserir Novo Bloco
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-semibold text-[10px]">
+                        <tr>
+                            <th class="py-3 px-4">Matrícula</th>
+                            <th class="py-3 px-4">Nome</th>
+                            <th class="py-3 px-4">Cargo</th>
+                            <th class="py-3 px-4">Líder Direto (Hierarquia)</th>
+                            <th class="py-3 px-4">Subprocesso</th>
+                            <th class="py-3 px-4 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="editorTableBody" class="divide-y divide-slate-100 text-slate-700">
+                        <!-- Preenchido via script -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -253,6 +335,28 @@
         let isDarkMode = false;
         const viewport = document.getElementById('viewport');
         const panContainer = document.getElementById('pan-container');
+
+        // TROCA DE ABAS
+        function switchTab(tab) {
+            const treeContainer = document.getElementById('tabTreeContainer');
+            const editorContainer = document.getElementById('tabEditorContainer');
+            const btnTree = document.getElementById('tabBtnTree');
+            const btnEditor = document.getElementById('tabBtnEditor');
+
+            if (tab === 'tree') {
+                treeContainer.classList.remove('hidden');
+                editorContainer.classList.add('hidden');
+                btnTree.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 bg-white text-emerald-700 shadow-sm";
+                btnEditor.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 text-slate-600 hover:text-slate-900";
+                filterTree();
+            } else {
+                treeContainer.classList.add('hidden');
+                editorContainer.classList.remove('hidden');
+                btnEditor.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 bg-white text-emerald-700 shadow-sm";
+                btnTree.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 text-slate-600 hover:text-slate-900";
+                renderEditorTable();
+            }
+        }
 
         window.addEventListener('click', function(e) {
             const panel = document.getElementById('levelDropdownPanel');
@@ -339,6 +443,129 @@
             });
         });
 
+        // MANIPULAÇÃO DO EDITOR DE HIERARQUIA
+        function populateLideresSelect(selectedNumlid = "") {
+            const select = document.getElementById('formNumlid');
+            select.innerHTML = '<option value="">Sem Líder (Topo da Árvore)</option>';
+            globalData.forEach(item => {
+                if (item.NUMCAD && item.NOME) {
+                    const opt = document.createElement('option');
+                    opt.value = String(item.NUMCAD).trim();
+                    opt.textContent = `${item.NOME} (${item.CARGO})`;
+                    if (String(item.NUMCAD).trim() === String(selectedNumlid).trim()) opt.selected = true;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').innerText = "Inserir Novo Colaborador / Cargo";
+            document.getElementById('formOriginalNumcad').value = "";
+            document.getElementById('formNumcad').value = Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('formNome').value = "";
+            document.getElementById('formCargo').value = "";
+            document.getElementById('formSubprocesso').value = "Geral";
+            populateLideresSelect();
+            document.getElementById('nodeModal').classList.remove('hidden');
+        }
+
+        function openEditModal(numcad) {
+            const item = globalData.find(i => String(i.NUMCAD).trim() === String(numcad).trim());
+            if (!item) return;
+            document.getElementById('modalTitle').innerText = "Editar Bloco da Hierarquia";
+            document.getElementById('formOriginalNumcad').value = item.NUMCAD;
+            document.getElementById('formNumcad').value = item.NUMCAD;
+            document.getElementById('formNome').value = item.NOME;
+            document.getElementById('formCargo').value = item.CARGO;
+            document.getElementById('formSubprocesso').value = item.SUBPROCESSO || item.SUBPROC || "Geral";
+            populateLideresSelect(item.NUMLID);
+            document.getElementById('nodeModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('nodeModal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const origNumcad = document.getElementById('formOriginalNumcad').value;
+            const numcad = document.getElementById('formNumcad').value.trim();
+            const nome = document.getElementById('formNome').value.trim();
+            const cargo = document.getElementById('formCargo').value.trim();
+            const numlid = document.getElementById('formNumlid').value.trim();
+            const subprocesso = document.getElementById('formSubprocesso').value.trim();
+
+            if (origNumcad) {
+                const item = globalData.find(i => String(i.NUMCAD).trim() === String(origNumcad).trim());
+                if (item) {
+                    item.NUMCAD = numcad;
+                    item.NOME = nome;
+                    item.CARGO = cargo;
+                    item.NUMLID = numlid;
+                    item.SUBPROCESSO = subprocesso;
+                }
+            } else {
+                globalData.push({
+                    NUMCAD: numcad,
+                    NOME: nome,
+                    CARGO: cargo,
+                    NUMLID: numlid,
+                    SUBPROCESSO: subprocesso,
+                    FOTO: ""
+                });
+            }
+
+            closeModal();
+            populateAutocomplete();
+            populateSubProcessFilter();
+            initApp();
+            renderEditorTable();
+        }
+
+        function deleteNode(numcad) {
+            if (confirm("Deseja realmente remover este elemento da árvore hierárquica?")) {
+                globalData = globalData.filter(i => String(i.NUMCAD).trim() !== String(numcad).trim());
+                populateAutocomplete();
+                populateSubProcessFilter();
+                initApp();
+                renderEditorTable();
+            }
+        }
+
+        function renderEditorTable() {
+            const tbody = document.getElementById('editorTableBody');
+            tbody.innerHTML = "";
+
+            if (globalData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Nenhum registro encontrado. Importe um arquivo CSV ou adicione um novo bloco.</td></tr>`;
+                return;
+            }
+
+            const map = {};
+            globalData.forEach(d => map[String(d.NUMCAD).trim()] = d.NOME);
+
+            globalData.forEach(item => {
+                const numcad = String(item.NUMCAD || '').trim();
+                const numlid = String(item.NUMLID || '').trim();
+                const liderNome = map[numlid] ? `${map[numlid]} (#${numlid})` : 'Nenhum (Topo da Hierarquia)';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${numcad}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${item.NOME || '-'}</td>
+                        <td class="py-3 px-4 text-slate-600">${item.CARGO || '-'}</td>
+                        <td class="py-3 px-4 text-emerald-600 font-medium">${liderNome}</td>
+                        <td class="py-3 px-4 text-slate-500">${item.SUBPROCESSO || item.SUBPROC || 'Geral'}</td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                            <button onclick="openEditModal('${numcad}')" class="p-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Editar / Mover Líder"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteNode('${numcad}')" class="p-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Excluir Bloco"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
         function populateAutocomplete() {
             const dataList = document.getElementById('employeesList');
             dataList.innerHTML = '';
@@ -377,7 +604,7 @@
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('app-body');
-            const viewport = document.getElementById('viewport');
+            const viewport = document.getElementById('tabTreeContainer');
             
             if (isDarkMode) {
                 body.classList.add('dark');
@@ -804,13 +1031,14 @@
             });
         }
 
-        // Exportação PowerPoint por Renderização de Imagem em Alta Resolução (100% fiel à tela, sem erro e sem quebra de formato)
+        // Exportação PowerPoint por Renderização de Imagem em Alta Resolução
         async function exportPPT() {
             if (globalData.length === 0 || currentFilteredRoots.length === 0) {
                 alert("Nenhum dado visível para exportar.");
                 return;
             }
 
+            switchTab('tree');
             const prep = await prepareForExport();
             const target = document.getElementById('tree-wrapper');
             const bg = isDarkMode ? '#0F172A' : '#F1F5F9';
@@ -833,7 +1061,6 @@
                 let slide = pptx.addSlide();
                 slide.background = { color: isDarkMode ? '0F172A' : 'F1F5F9' };
 
-                // Inserção da imagem mantendo proporção ideal no slide 16:9 (13.33 x 7.5 polegadas)
                 slide.addImage({
                     data: imgBase64,
                     x: 0.3,
