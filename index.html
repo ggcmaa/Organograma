@@ -98,8 +98,8 @@
 
         .grid-compact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; padding-top: 16px; }
 
-        #viewport { cursor: grab; user-select: none; }
-        #viewport:active { cursor: grabbing; }
+        .viewport-drag { cursor: grab; user-select: none; }
+        .viewport-drag:active { cursor: grabbing; }
 
         .lvl-badge-1 { background-color: #0d9488; color: white; }
         .lvl-ring-1 { border-color: #0d9488; }
@@ -168,9 +168,15 @@
                         <!-- Preenchido via script -->
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Subprocesso</label>
-                    <input type="text" id="formSubprocesso" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Subprocesso</label>
+                        <input type="text" id="formSubprocesso" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Centro de Custo (CC)</label>
+                        <input type="text" id="formCC" placeholder="Ex: CC-1020" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                    </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-3">
                     <button type="button" onclick="closeModal()" class="px-3.5 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300">Cancelar</button>
@@ -277,7 +283,7 @@
     </header>
 
     <!-- ABA 1: VISUALIZAÇÃO DA ÁRVORE DO ORGANOGRAMA -->
-    <main id="tabTreeContainer" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100">
+    <main id="tabTreeContainer" class="flex-1 overflow-hidden relative w-full h-full bg-slate-100 viewport-drag">
         <div id="pan-container" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
             <div id="tree-wrapper" class="flex flex-col items-center p-8 bg-transparent">
                 <div id="tree-root" class="tf-tree layout-vertical">
@@ -290,35 +296,27 @@
         </div>
     </main>
 
-    <!-- ABA 2: EDITOR E MANIPULAÇÃO DE HIERARQUIA -->
-    <main id="tabEditorContainer" class="flex-1 overflow-y-auto p-8 hidden bg-slate-50">
-        <div class="max-w-5xl mx-auto space-y-6">
-            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 class="text-base font-bold text-slate-800">Editor de Hierarquia (Manipulação de Nós)</h2>
-                    <p class="text-xs text-slate-500">Altere o líder direto de qualquer colaborador, adicione cargos ou remova caixas temporariamente antes de gerar a apresentação no PowerPoint.</p>
-                </div>
-                <button onclick="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2 shadow">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Inserir Novo Bloco
-                </button>
+    <!-- ABA 2: EDITOR VISUAL INTERATIVO DA HIERARQUIA -->
+    <main id="tabEditorContainer" class="flex-1 overflow-hidden relative w-full h-full bg-slate-50 hidden viewport-drag">
+        <!-- BARRA FLUTUANTE DE AÇÕES DO EDITOR -->
+        <div class="absolute top-4 left-6 z-20 bg-white/90 backdrop-blur border border-slate-200 rounded-2xl p-3 shadow-lg flex items-center gap-4">
+            <div>
+                <h2 class="text-xs font-bold text-slate-800">Editor Visual de Caixas</h2>
+                <p class="text-[10px] text-slate-500">Manipule as caixas da hierarquia diretamente no mapa.</p>
             </div>
+            <button onclick="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Inserir No Topo
+            </button>
+        </div>
 
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-semibold text-[10px]">
-                        <tr>
-                            <th class="py-3 px-4">Matrícula</th>
-                            <th class="py-3 px-4">Nome</th>
-                            <th class="py-3 px-4">Cargo</th>
-                            <th class="py-3 px-4">Líder Direto (Hierarquia)</th>
-                            <th class="py-3 px-4">Subprocesso</th>
-                            <th class="py-3 px-4 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="editorTableBody" class="divide-y divide-slate-100 text-slate-700">
-                        <!-- Preenchido via script -->
-                    </tbody>
-                </table>
+        <div id="pan-container-editor" class="absolute inset-0 flex items-start justify-center p-16 transition-transform duration-100 ease-out">
+            <div id="editor-wrapper" class="flex flex-col items-center p-8 bg-transparent">
+                <div id="editor-tree-root" class="tf-tree layout-vertical">
+                    <div class="text-center mt-20 text-slate-400">
+                        <i data-lucide="edit-3" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+                        <p class="text-sm font-medium text-slate-600">Importe um CSV para editar o organograma interativamente.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -331,13 +329,18 @@
         let collapsedNodes = new Set();
         let selectedLevels = new Set();
         let maxGlobalDepth = 0;
+
+        // Controle de Zoom e Arrasto (Compartilhado)
         let zoomLevel = 1, isPanning = false, startX = 0, startY = 0, translateX = 0, translateY = 0;
+        let activeTab = 'tree';
         let isDarkMode = false;
-        const viewport = document.getElementById('tabTreeContainer');
+
         const panContainer = document.getElementById('pan-container');
+        const panContainerEditor = document.getElementById('pan-container-editor');
 
         // TROCA DE ABAS
         function switchTab(tab) {
+            activeTab = tab;
             const treeContainer = document.getElementById('tabTreeContainer');
             const editorContainer = document.getElementById('tabEditorContainer');
             const btnTree = document.getElementById('tabBtnTree');
@@ -354,7 +357,7 @@
                 editorContainer.classList.remove('hidden');
                 btnEditor.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 bg-white text-emerald-700 shadow-sm";
                 btnTree.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 text-slate-600 hover:text-slate-900";
-                renderEditorTable();
+                renderEditorTree();
             }
         }
 
@@ -443,7 +446,7 @@
             });
         });
 
-        // MANIPULAÇÃO DO EDITOR DE HIERARQUIA
+        // POPULAR SELETORES DO FORMULÁRIO DE EDIÇÃO
         function populateLideresSelect(selectedNumlid = "") {
             const select = document.getElementById('formNumlid');
             select.innerHTML = '<option value="">Sem Líder (Topo da Árvore)</option>';
@@ -458,14 +461,15 @@
             });
         }
 
-        function openCreateModal() {
-            document.getElementById('modalTitle').innerText = "Inserir Novo Colaborador / Cargo";
+        function openCreateModal(parentNumcad = "") {
+            document.getElementById('modalTitle').innerText = parentNumcad ? "Inserir Subordinado Direto" : "Inserir Novo Colaborador / Cargo";
             document.getElementById('formOriginalNumcad').value = "";
             document.getElementById('formNumcad').value = Math.floor(100000 + Math.random() * 900000);
             document.getElementById('formNome').value = "";
             document.getElementById('formCargo').value = "";
             document.getElementById('formSubprocesso').value = "Geral";
-            populateLideresSelect();
+            document.getElementById('formCC').value = "";
+            populateLideresSelect(parentNumcad);
             document.getElementById('nodeModal').classList.remove('hidden');
         }
 
@@ -478,6 +482,7 @@
             document.getElementById('formNome').value = item.NOME;
             document.getElementById('formCargo').value = item.CARGO;
             document.getElementById('formSubprocesso').value = item.SUBPROCESSO || item.SUBPROC || "Geral";
+            document.getElementById('formCC').value = item.CC || "";
             populateLideresSelect(item.NUMLID);
             document.getElementById('nodeModal').classList.remove('hidden');
         }
@@ -494,6 +499,7 @@
             const cargo = document.getElementById('formCargo').value.trim();
             const numlid = document.getElementById('formNumlid').value.trim();
             const subprocesso = document.getElementById('formSubprocesso').value.trim();
+            const cc = document.getElementById('formCC').value.trim();
 
             if (origNumcad) {
                 const item = globalData.find(i => String(i.NUMCAD).trim() === String(origNumcad).trim());
@@ -503,6 +509,7 @@
                     item.CARGO = cargo;
                     item.NUMLID = numlid;
                     item.SUBPROCESSO = subprocesso;
+                    item.CC = cc;
                 }
             } else {
                 globalData.push({
@@ -511,6 +518,7 @@
                     CARGO: cargo,
                     NUMLID: numlid,
                     SUBPROCESSO: subprocesso,
+                    CC: cc,
                     FOTO: ""
                 });
             }
@@ -519,7 +527,7 @@
             populateAutocomplete();
             populateSubProcessFilter();
             initApp();
-            renderEditorTable();
+            if (activeTab === 'editor') renderEditorTree();
         }
 
         function deleteNode(numcad) {
@@ -528,42 +536,8 @@
                 populateAutocomplete();
                 populateSubProcessFilter();
                 initApp();
-                renderEditorTable();
+                if (activeTab === 'editor') renderEditorTree();
             }
-        }
-
-        function renderEditorTable() {
-            const tbody = document.getElementById('editorTableBody');
-            tbody.innerHTML = "";
-
-            if (globalData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Nenhum registro encontrado. Importe um arquivo CSV ou adicione um novo bloco.</td></tr>`;
-                return;
-            }
-
-            const map = {};
-            globalData.forEach(d => map[String(d.NUMCAD).trim()] = d.NOME);
-
-            globalData.forEach(item => {
-                const numcad = String(item.NUMCAD || '').trim();
-                const numlid = String(item.NUMLID || '').trim();
-                const liderNome = map[numlid] ? `${map[numlid]} (#${numlid})` : 'Nenhum (Topo da Hierarquia)';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-3 px-4 font-mono font-bold text-slate-500">${numcad}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">${item.NOME || '-'}</td>
-                        <td class="py-3 px-4 text-slate-600">${item.CARGO || '-'}</td>
-                        <td class="py-3 px-4 text-emerald-600 font-medium">${liderNome}</td>
-                        <td class="py-3 px-4 text-slate-500">${item.SUBPROCESSO || item.SUBPROC || 'Geral'}</td>
-                        <td class="py-3 px-4 text-center space-x-2">
-                            <button onclick="openEditModal('${numcad}')" class="p-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Editar / Mover Líder"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-                            <button onclick="deleteNode('${numcad}')" class="p-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Excluir Bloco"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            lucide.createIcons();
         }
 
         function populateAutocomplete() {
@@ -604,22 +578,28 @@
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             const body = document.getElementById('app-body');
-            const viewport = document.getElementById('tabTreeContainer');
+            const viewportTree = document.getElementById('tabTreeContainer');
+            const viewportEditor = document.getElementById('tabEditorContainer');
             
             if (isDarkMode) {
                 body.classList.add('dark');
                 body.classList.remove('bg-slate-100');
                 body.classList.add('bg-slate-900');
-                viewport.classList.remove('bg-slate-100');
-                viewport.classList.add('bg-slate-900');
+                viewportTree.classList.remove('bg-slate-100');
+                viewportTree.classList.add('bg-slate-900');
+                viewportEditor.classList.remove('bg-slate-50');
+                viewportEditor.classList.add('bg-slate-900');
             } else {
                 body.classList.remove('dark');
                 body.classList.remove('bg-slate-900');
                 body.classList.add('bg-slate-100');
-                viewport.classList.remove('bg-slate-900');
-                viewport.classList.add('bg-slate-100');
+                viewportTree.classList.remove('bg-slate-900');
+                viewportTree.classList.add('bg-slate-100');
+                viewportEditor.classList.remove('bg-slate-900');
+                viewportEditor.classList.add('bg-slate-50');
             }
             filterTree();
+            if (activeTab === 'editor') renderEditorTree();
         }
 
         function toggleCollapse(numcad) {
@@ -641,7 +621,7 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
-                    cc: row.CC || 'Unidade Geral',
+                    cc: row.CC || 'S/CC',
                     subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
                     foto: row.FOTO || '',
                     children: []
@@ -717,7 +697,7 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
-                    cc: row.CC || 'Unidade Geral',
+                    cc: row.CC || 'S/CC',
                     subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
                     foto: row.FOTO || '',
                     children: [],
@@ -806,7 +786,8 @@
             renderTree(currentFilteredRoots, layoutFormat);
         }
 
-        function renderPillCard(node, isCompactMode = false) {
+        // RENDERIZAÇÃO DAS CAIXAS DO ORGANOGRAMA COM CC
+        function renderPillCard(node, isCompactMode = false, isEditor = false) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
 
@@ -820,7 +801,7 @@
             const hasChildren = node.children.length > 0;
 
             let toggleIndicator = '';
-            if (hasChildren) {
+            if (hasChildren && !isEditor) {
                 const iconName = isCollapsed ? 'chevron-right' : 'chevron-down';
                 const labelText = isCollapsed ? `+${node.hcIndirect}` : node.hcDirect;
                 toggleIndicator = `
@@ -830,10 +811,20 @@
                     </div>`;
             }
 
-            const cardWidth = isCompactMode ? 'w-64 min-h-[76px]' : 'w-72 min-h-[82px]';
+            // BOTÕES DE MANIPULAÇÃO DA CAIXA NO MODO EDITOR
+            const actionButtonsHTML = isEditor ? `
+                <div class="absolute -top-3 left-3 flex items-center gap-1 bg-slate-900/90 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                    <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-1 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                    <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-1 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                    <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-1 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                </div>` : '';
+
+            const cardWidth = isCompactMode ? 'w-64 min-h-[86px]' : 'w-72 min-h-[90px]';
+            const ccText = node.cc ? `CC: ${node.cc}` : 'S/CC';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-2.5 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                <div ${!isEditor ? `onclick="toggleCollapse('${node.numcad}')"` : ''} class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                    ${actionButtonsHTML}
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
                         L${node.level}
                     </span>
@@ -842,8 +833,9 @@
                         <h3 class="text-xs font-bold leading-tight break-words text-slate-800 dark:text-white" title="${node.nome}">${node.nome}</h3>
                         <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5 break-words" title="${node.cargo}">${node.cargo}</p>
                         
-                        <div class="flex items-center gap-1.5 mt-1.5 text-[9px] text-slate-400 font-mono">
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Subprocesso: ${node.subprocesso}">${node.subprocesso}</span>
+                        <div class="flex items-center gap-1 mt-1.5 text-[9px] text-slate-400 font-mono flex-wrap">
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Subprocesso">${node.subprocesso}</span>
+                            <span class="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-semibold px-1.5 py-0.5 rounded leading-none" title="Centro de Custo">${ccText}</span>
                             <span>•</span>
                             <span class="text-emerald-600 font-bold" title="HC Direto / Indireto">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>
                         </div>
@@ -900,20 +892,20 @@
                 </div>`;
         }
 
-        function renderNodeHTML(node, layoutFormat) {
+        function renderNodeHTML(node, layoutFormat, isEditor = false) {
             const isLeaf = node.children.length === 0;
-            const useCircle = layoutFormat === 'compact' && isLeaf;
+            const useCircle = layoutFormat === 'compact' && isLeaf && !isEditor;
             const isCompact = layoutFormat === 'horizontal-compact';
-            const isCollapsed = collapsedNodes.has(node.numcad);
+            const isCollapsed = collapsedNodes.has(node.numcad) && !isEditor;
 
-            if (node.level > 6 && node.children.length > 0 && !isCollapsed) {
-                return `<li>${renderPillCard(node, isCompact)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
+            if (node.level > 6 && node.children.length > 0 && !isCollapsed && !isEditor) {
+                return `<li>${renderPillCard(node, isCompact, isEditor)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
             }
 
-            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node, isCompact)}`;
+            let html = `<li>${useCircle ? renderCircleCard(node) : renderPillCard(node, isCompact, isEditor)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
-                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
+                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0) && !isEditor) {
                     html += `<div class="grid-compact">`;
                     node.children.forEach(child => {
                         html += `<div>${renderCircleCard(child)}</div>`;
@@ -922,7 +914,7 @@
                 } else {
                     html += '<ul>';
                     node.children.forEach(child => {
-                        html += renderNodeHTML(child, layoutFormat);
+                        html += renderNodeHTML(child, layoutFormat, isEditor);
                     });
                     html += '</ul>';
                 }
@@ -948,7 +940,67 @@
 
             let html = '<ul>';
             roots.forEach(root => {
-                html += renderNodeHTML(root, layoutFormat);
+                html += renderNodeHTML(root, layoutFormat, false);
+            });
+            html += '</ul>';
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // RENDERIZAÇÃO DA ÁRVORE VISUAL INTERATIVA NO MODO EDITOR
+        function renderEditorTree() {
+            const container = document.getElementById('editor-tree-root');
+            if (globalData.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-sm text-center mt-10">Importe um arquivo CSV para visualizar e editar as caixas do organograma.</p>`;
+                return;
+            }
+
+            const layoutFormat = document.getElementById('layoutFormat').value;
+            container.className = layoutFormat === 'horizontal' ? 'tf-tree layout-horizontal' : 'tf-tree layout-vertical';
+
+            const map = {};
+            globalData.forEach(row => {
+                const numcad = String(row.NUMCAD || '').trim();
+                if (!numcad) return;
+                map[numcad] = {
+                    numcad: numcad,
+                    nome: row.NOME || 'Sem Nome',
+                    numlid: String(row.NUMLID || '').trim(),
+                    cargo: row.CARGO || 'Cargo não informado',
+                    cc: row.CC || 'S/CC',
+                    subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
+                    foto: row.FOTO || '',
+                    children: [],
+                    level: 1
+                };
+            });
+
+            let roots = [];
+            Object.values(map).forEach(node => {
+                if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
+                    map[node.numlid].children.push(node);
+                } else {
+                    roots.push(node);
+                }
+            });
+
+            function calculateMetrics(node, currentLevel = 1) {
+                node.level = currentLevel;
+                let direct = node.children.length;
+                let indirect = direct;
+                node.children.forEach(child => {
+                    indirect += calculateMetrics(child, currentLevel + 1);
+                });
+                node.hcDirect = direct;
+                node.hcIndirect = indirect;
+                return indirect;
+            }
+            roots.forEach(root => calculateMetrics(root, 1));
+
+            let html = '<ul>';
+            roots.forEach(root => {
+                html += renderNodeHTML(root, layoutFormat, true);
             });
             html += '</ul>';
 
@@ -1079,26 +1131,28 @@
             }
         }
 
-        // ZOOM & PAN COM BOTÃO ESQUERDO E BOTÃO DIREITO DO MOUSE
+        // ZOOM & PAN COM SUPORTE AO BOTÃO ESQUERDO E DIREITO
+        function getActivePanContainer() {
+            return activeTab === 'editor' ? panContainerEditor : panContainer;
+        }
+
         function updateTransform() {
-            panContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+            const activeContainer = getActivePanContainer();
+            activeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
         }
         function zoomIn() { zoomLevel = Math.min(zoomLevel + 0.15, 2.5); updateTransform(); }
         function zoomOut() { zoomLevel = Math.max(zoomLevel - 0.15, 0.3); updateTransform(); }
         function resetZoom() { zoomLevel = 1; translateX = 0; translateY = 0; updateTransform(); }
 
-        // EVITAR ABRIR O MENU DE CONTEXTO DO BOTÃO DIREITO DENTRO DO CANVAS
-        viewport.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-
-        viewport.addEventListener('mousedown', (e) => {
-            // Aceita Botão Esquerdo (0) e Botão Direito (2) para Pan/Arrastar
-            if (e.button === 0 || e.button === 2) {
-                isPanning = true;
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
-            }
+        document.querySelectorAll('.viewport-drag').forEach(vp => {
+            vp.addEventListener('contextmenu', (e) => e.preventDefault());
+            vp.addEventListener('mousedown', (e) => {
+                if (e.button === 0 || e.button === 2) {
+                    isPanning = true;
+                    startX = e.clientX - translateX;
+                    startY = e.clientY - translateY;
+                }
+            });
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -1108,9 +1162,7 @@
             updateTransform();
         });
 
-        window.addEventListener('mouseup', () => {
-            isPanning = false;
-        });
+        window.addEventListener('mouseup', () => { isPanning = false; });
     </script>
 </body>
 </html>
