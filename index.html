@@ -245,7 +245,7 @@
         lucide.createIcons();
 
         let globalData = [];
-        let currentFilteredRoots = []; // Mantém a última estrutura filtrada exibida em tela
+        let currentFilteredRoots = [];
         let collapsedNodes = new Set();
         let selectedLevels = new Set();
         let maxGlobalDepth = 0;
@@ -523,7 +523,7 @@
             function sortNodes(nodes) {
                 nodes.sort((a, b) => {
                     if (sortBy === 'name') return a.nome.localeCompare(b.nome);
-                    if (sortBy === 'hc') return b.hcIndirect - a.hcIndirect;
+                    if (sortBy === 'hc') return b.hcIndirect - b.hcIndirect;
                     if (sortBy === 'id') return a.numcad.localeCompare(b.numcad);
                     return 0;
                 });
@@ -563,7 +563,6 @@
                 roots = matchedNode ? [matchedNode] : [];
             }
 
-            // Omitir nós colapsados para a renderização e para o PPT refletir exatamente a tela
             function pruneCollapsed(nodes) {
                 return nodes.map(node => {
                     let copy = { ...node };
@@ -805,7 +804,7 @@
             });
         }
 
-        // Exportação PowerPoint 100% Editável refletindo estritamente a árvore filtrada em tela
+        // Exportação PowerPoint Editável com formatação completa idêntica ao card da tela
         async function exportPPT() {
             if (globalData.length === 0 || currentFilteredRoots.length === 0) {
                 alert("Nenhum dado visível para exportar.");
@@ -827,9 +826,9 @@
 
                 currentFilteredRoots.forEach(gatherFilteredNodes);
 
-                const cardW = 3.0;
-                const cardH = 0.9;
-                const gapX = 0.3;
+                const cardW = 3.2;
+                const cardH = 1.0;
+                const gapX = 0.4;
 
                 Object.keys(levelMap).sort((a,b)=>a-b).forEach((lvl, lvlIdx) => {
                     const nodesInLvl = levelMap[lvl];
@@ -843,11 +842,11 @@
                         if (startX < 0.5) startX = 0.5;
 
                         let posX = startX + (colIdx * (cardW + gapX));
-                        let posY = 0.8 + (lvlIdx * 1.2) + (rowIdx * 1.0);
+                        let posY = 0.8 + (lvlIdx * 1.3) + (rowIdx * 1.1);
 
                         if (posY > 6.8) return;
 
-                        // Caixa editável (Forma geométrica do PowerPoint)
+                        // Fundo da caixa (Retângulo arredondado editável)
                         slide.addShape(pptx.ShapeType.roundRect, {
                             x: posX,
                             y: posY,
@@ -857,22 +856,65 @@
                             line: { color: 'CBD5E1', width: 1 }
                         });
 
-                        // Texto editável associado
+                        // Badge de Nível (L1, L2, etc.) no canto superior direito do card
+                        const badgeColors = { 1: '0D9488', 2: '16A34A', 3: 'D97706', 4: '2563EB' };
+                        let badgeBg = badgeColors[node.level] || '64748B';
+                        
+                        slide.addShape(pptx.ShapeType.roundRect, {
+                            x: posX + cardW - 0.7,
+                            y: posY - 0.15,
+                            w: 0.55,
+                            h: 0.25,
+                            fill: { color: badgeBg }
+                        });
+                        slide.addText(`L${node.level}`, {
+                            x: posX + cardW - 0.7,
+                            y: posY - 0.15,
+                            w: 0.55,
+                            h: 0.25,
+                            fontSize: 8,
+                            bold: true,
+                            color: 'FFFFFF',
+                            align: 'center',
+                            valign: 'middle'
+                        });
+
+                        // Foto / Avatar placeholder caso exista imagem
+                        if (node.foto && node.foto.length > 5) {
+                            try {
+                                slide.addImage({
+                                    path: node.foto,
+                                    x: posX + 0.15,
+                                    y: posY + 0.15,
+                                    w: 0.7,
+                                    h: 0.7,
+                                    rounding: true
+                                });
+                            } catch(e) {
+                                // Fallback se a imagem externa falhar por CORS
+                            }
+                        }
+
+                        // Textos formatados idênticos à tela (Nome, Cargo, Subprocesso e Headcount)
+                        let textIndent = (node.foto && node.foto.length > 5) ? 0.95 : 0.15;
+                        
                         slide.addText([
-                            { text: node.nome, options: { fontSize: 10, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B', breakLine: true } },
-                            { text: node.cargo + ` (Dir: ${node.hcDirect} | Ind: ${node.hcIndirect})`, options: { fontSize: 8, color: '64748B' } }
+                            { text: node.nome + '\n', options: { fontSize: 10, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B' } },
+                            { text: node.cargo + '\n', options: { fontSize: 8, color: isDarkMode ? '94A3B8' : '64748B', bold: false } },
+                            { text: `${node.subprocesso} • Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}`, options: { fontSize: 7, color: '059669', bold: true } }
                         ], {
-                            x: posX + 0.1,
+                            x: posX + textIndent,
                             y: posY + 0.1,
-                            w: cardW - 0.2,
+                            w: cardW - textIndent - 0.1,
                             h: cardH - 0.2,
                             align: 'left',
-                            valign: 'middle'
+                            valign: 'middle',
+                            margin: 0
                         });
                     });
                 });
 
-                await pptx.writeFile({ fileName: 'organograma-filtrado-editavel-cmaa.pptx' });
+                await pptx.writeFile({ fileName: 'organograma-editavel-formatado-cmaa.pptx' });
             } catch (err) {
                 console.error("Erro detalhado PPTX:", err);
                 alert("Erro ao gerar o PowerPoint editável. Verifique o console.");
