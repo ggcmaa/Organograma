@@ -253,7 +253,6 @@
         const viewport = document.getElementById('viewport');
         const panContainer = document.getElementById('pan-container');
 
-        // Fechar dropdown de níveis ao clicar fora
         window.addEventListener('click', function(e) {
             const panel = document.getElementById('levelDropdownPanel');
             const btn = document.getElementById('levelDropdownBtn');
@@ -451,7 +450,6 @@
             }
             roots.forEach(findMaxDepth);
 
-            // Construir checkboxes de níveis
             const container = document.getElementById('levelCheckboxesContainer');
             container.innerHTML = '';
             selectedLevels.clear();
@@ -532,7 +530,6 @@
             }
             sortNodes(roots);
 
-            // Filtro por Subprocesso
             if (subProcessFilter !== 'all') {
                 function filterBySubProcess(nodes) {
                     return nodes.filter(node => {
@@ -544,7 +541,6 @@
                 roots = filterBySubProcess(roots);
             }
 
-            // Filtro Múltiplo de Níveis
             function applyMultipleLevelFilter(nodes) {
                 return nodes.filter(node => {
                     node.children = applyMultipleLevelFilter(node.children);
@@ -569,7 +565,6 @@
             renderTree(roots, layoutFormat);
         }
 
-        // Card com HC Direto e Indireto destacado
         function renderPillCard(node, isCompactMode = false) {
             const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
             const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
@@ -795,110 +790,113 @@
             });
         }
 
-        // Exportação PowerPoint 100% Editável (Formas e Textos Nativos)
+        // Exportação PowerPoint 100% Editável Corrigida
         async function exportPPT() {
             if (globalData.length === 0) {
                 alert("Nenhum dado carregado para exportar.");
                 return;
             }
 
-            let pptx = new window.PptxGenJS();
-            pptx.layout = 'LAYOUT_16x9';
-            let slide = pptx.addSlide();
-            slide.background = { color: isDarkMode ? '0F172A' : 'F1F5F9' };
+            try {
+                let pptx = new window.PptxGenJS();
+                pptx.layout = 'LAYOUT_16x9';
+                let slide = pptx.addSlide();
+                slide.background = { color: isDarkMode ? '0F172A' : 'F1F5F9' };
 
-            // Gerar caixas de texto editáveis organizadas por nível hierárquico
-            let startY = 0.8;
-            let levelMap = {};
-
-            function gatherNodesByLevel(node) {
-                if (!levelMap[node.level]) levelMap[node.level] = [];
-                levelMap[node.level].push(node);
-                node.children.forEach(gatherNodesByLevel);
-            }
-
-            // Pegar as raízes atuais exibidas
-            const currentRoots = [];
-            const map = {};
-            globalData.forEach(row => {
-                const numcad = String(row.NUMCAD || '').trim();
-                if (!numcad) return;
-                map[numcad] = {
-                    numcad: numcad,
-                    nome: row.NOME || 'Sem Nome',
-                    numlid: String(row.NUMLID || '').trim(),
-                    cargo: row.CARGO || 'Cargo não informado',
-                    subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
-                    children: [],
-                    level: 1
-                };
-            });
-
-            let roots = [];
-            Object.values(map).forEach(node => {
-                if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
-                    map[node.numlid].children.push(node);
-                } else {
-                    roots.push(node);
+                let levelMap = {};
+                function gatherNodesByLevel(node) {
+                    if (!levelMap[node.level]) levelMap[node.level] = [];
+                    levelMap[node.level].push(node);
+                    node.children.forEach(gatherNodesByLevel);
                 }
-            });
 
-            function calculateMetrics(node, currentLevel = 1) {
-                node.level = currentLevel;
-                node.children.forEach(child => calculateMetrics(child, currentLevel + 1));
-            }
-            roots.forEach(root => calculateMetrics(root, 1));
-
-            // Filtrar apenas os níveis selecionados
-            function filterLevelsForPPT(nodes) {
-                return nodes.filter(node => {
-                    node.children = filterLevelsForPPT(node.children);
-                    return selectedLevels.has(node.level) || node.children.length > 0;
+                const map = {};
+                globalData.forEach(row => {
+                    const numcad = String(row.NUMCAD || '').trim();
+                    if (!numcad) return;
+                    map[numcad] = {
+                        numcad: numcad,
+                        nome: row.NOME || 'Sem Nome',
+                        numlid: String(row.NUMLID || '').trim(),
+                        cargo: row.CARGO || 'Cargo não informado',
+                        subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
+                        children: [],
+                        level: 1
+                    };
                 });
-            }
-            let filteredRoots = filterLevelsForPPT(roots);
-            filteredRoots.forEach(gatherNodesByLevel);
 
-            const cardW = 3.2;
-            const cardH = 1.0;
-            const gapX = 0.4;
+                let roots = [];
+                Object.values(map).forEach(node => {
+                    if (node.numlid && map[node.numlid] && node.numlid !== node.numcad) {
+                        map[node.numlid].children.push(node);
+                    } else {
+                        roots.push(node);
+                    }
+                });
 
-            Object.keys(levelMap).sort((a,b)=>a-b).forEach((lvl, lvlIdx) => {
-                const nodesInLvl = levelMap[lvl];
-                let startX = (13.333 - (nodesInLvl.length * (cardW + gapX) - gapX)) / 2;
-                if (startX < 0.5) startX = 0.5;
+                function calculateMetrics(node, currentLevel = 1) {
+                    node.level = currentLevel;
+                    node.children.forEach(child => calculateMetrics(child, currentLevel + 1));
+                }
+                roots.forEach(root => calculateMetrics(root, 1));
 
-                nodesInLvl.forEach((node, idx) => {
-                    let posX = startX + (idx * (cardW + gapX));
-                    let posY = startY + (lvlIdx * 1.3);
-
-                    if (posY > 6.5) return; // Evitar ultrapassar o slide
-
-                    // Retângulo de fundo editável
-                    slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
-                        x: posX,
-                        y: posY,
-                        w: cardW,
-                        h: cardH,
-                        fill: { color: isDarkMode ? '1E293B' : 'FFFFFF' },
-                        line: { color: 'CBD5E1', width: 1 }
+                function filterLevelsForPPT(nodes) {
+                    return nodes.filter(node => {
+                        node.children = filterLevelsForPPT(node.children);
+                        return selectedLevels.has(node.level) || node.children.length > 0;
                     });
+                }
+                let filteredRoots = filterLevelsForPPT(roots);
+                filteredRoots.forEach(gatherNodesByLevel);
 
-                    // Texto editável do cargo e nome
-                    slide.addText([
-                        { text: node.nome + '\n', options: { fontSize: 11, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B' } },
-                        { text: node.cargo, options: { fontSize: 8, color: '64748B' } }
-                    ], {
-                        x: posX + 0.1,
-                        y: posY + 0.1,
-                        w: cardW - 0.2,
-                        h: cardH - 0.2,
-                        margin: 0
+                const cardW = 3.0;
+                const cardH = 0.9;
+                const gapX = 0.3;
+
+                Object.keys(levelMap).sort((a,b)=>a-b).forEach((lvl, lvlIdx) => {
+                    const nodesInLvl = levelMap[lvl];
+                    let maxPerRow = 4;
+                    
+                    nodesInLvl.forEach((node, idx) => {
+                        let rowIdx = Math.floor(idx / maxPerRow);
+                        let colIdx = idx % maxPerRow;
+                        
+                        let startX = (13.333 - (Math.min(nodesInLvl.length - (rowIdx * maxPerRow), maxPerRow) * (cardW + gapX) - gapX)) / 2;
+                        if (startX < 0.5) startX = 0.5;
+
+                        let posX = startX + (colIdx * (cardW + gapX));
+                        let posY = 0.8 + (lvlIdx * 1.2) + (rowIdx * 1.0);
+
+                        if (posY > 6.8) return;
+
+                        slide.addShape(pptx.ShapeType.roundRect, {
+                            x: posX,
+                            y: posY,
+                            w: cardW,
+                            h: cardH,
+                            fill: { color: isDarkMode ? '1E293B' : 'FFFFFF' },
+                            line: { color: 'CBD5E1', width: 1 }
+                        });
+
+                        slide.addText([
+                            { text: node.nome, options: { fontSize: 10, bold: true, color: isDarkMode ? 'FFFFFF' : '1E293B', breakLine: true } },
+                            { text: node.cargo, options: { fontSize: 8, color: '64748B' } }
+                        ], {
+                            x: posX + 0.1,
+                            y: posY + 0.1,
+                            w: cardW - 0.2,
+                            h: cardH - 0.2,
+                            align: 'left',
+                            valign: 'middle'
+                        });
                     });
                 });
-            });
 
-            await pptx.writeFile({ fileName: 'organograma-editavel-cmaa.pptx' });
+                await pptx.writeFile({ fileName: 'organograma-editavel-cmaa.pptx' });
+            } catch (err) {
+                console.error("Erro detalhado PPTX:", err);
+                alert("Erro ao gerar o PowerPoint editável. Verifique o console.");
+            }
         }
 
         // Zoom & Pan
