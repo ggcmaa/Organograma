@@ -109,6 +109,10 @@
         .lvl-ring-3 { border-color: #d97706; }
         .lvl-badge-4 { background-color: #2563eb; color: white; }
         .lvl-ring-4 { border-color: #2563eb; }
+        .lvl-badge-5 { background-color: #7c3aed; color: white; }
+        .lvl-ring-5 { border-color: #7c3aed; }
+        .lvl-badge-6 { background-color: #db2777; color: white; }
+        .lvl-ring-6 { border-color: #db2777; }
         .lvl-badge-default { background-color: #64748b; color: white; }
         .lvl-ring-default { border-color: #64748b; }
     </style>
@@ -792,16 +796,28 @@
             renderEditorTree(currentFilteredRoots, layoutFormat);
         }
 
+        function getLevelStyles(level) {
+            if (level >= 1 && level <= 6) {
+                return {
+                    badge: `lvl-badge-${level}`,
+                    ring: `lvl-ring-${level}`
+                };
+            }
+            return {
+                badge: 'lvl-badge-default',
+                ring: 'lvl-ring-default'
+            };
+        }
+
         // RENDERIZAÇÃO DAS CAIXAS DO ORGANOGRAMA COM UNIDADE E OPÇÃO DE OCULTAR HC
         function renderPillCard(node, isCompactMode = false, isEditor = false) {
-            const badgeClass = `lvl-badge-${node.level}` in CSS ? `lvl-badge-${node.level}` : 'lvl-badge-default';
-            const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
+            const styles = getLevelStyles(node.level);
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${ringClass} shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${styles.ring} shadow shrink-0" crossorigin="anonymous">`
+                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
@@ -832,7 +848,7 @@
             return `
                 <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
                     ${actionButtonsHTML}
-                    <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${badgeClass} shadow-sm">
+                    <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${styles.badge} shadow-sm">
                         L${node.level}
                     </span>
                     ${fotoHTML}
@@ -850,21 +866,29 @@
                 </div>`;
         }
 
+        // CARTÃO DE AGRUPAMENTO POR CARGO A PARTIR DO NÍVEL 7 (L7+)
         function renderCargoSummaryCard(node) {
             const cargoCounts = {};
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+
             function collectCargos(n) {
-                cargoCounts[n.cargo] = (cargoCounts[n.cargo] || 0) + 1;
+                const cargoNome = (n.cargo || 'Cargo não informado').trim();
+                cargoCounts[cargoNome] = (cargoCounts[cargoNome] || 0) + 1;
                 n.children.forEach(collectCargos);
             }
             node.children.forEach(collectCargos);
 
-            let summaryHTML = '<div class="space-y-1 mt-1 border-t border-slate-200 dark:border-slate-700 pt-1">';
-            Object.entries(cargoCounts).forEach(([cargo, count]) => {
+            // Ordena os cargos do maior HC para o menor
+            const sortedCargos = Object.entries(cargoCounts).sort((a, b) => b[1] - a[1]);
+
+            let summaryHTML = '<div class="space-y-1.5 mt-1.5 border-t border-slate-200 dark:border-slate-700 pt-1.5">';
+            sortedCargos.forEach(([cargo, count]) => {
                 summaryHTML += `
-                    <div class="flex justify-between items-center text-[9px] text-slate-600 dark:text-slate-300">
-                        <span class="font-medium break-words pr-1" title="${cargo}">${cargo}</span>
-                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full text-[8px] shrink-0">${count}x</span>
+                    <div class="flex justify-between items-center text-[10px] text-slate-600 dark:text-slate-300 gap-2">
+                        <span class="font-medium break-words leading-tight" title="${cargo}">${cargo}</span>
+                        <span class="font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[9px] shrink-0">
+                            HC: ${count}
+                        </span>
                     </div>`;
             });
             summaryHTML += '</div>';
@@ -872,21 +896,23 @@
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
 
             return `
-                <div class="relative inline-flex flex-col ${cardBg} border rounded-xl p-2.5 shadow-md w-64 text-left">
-                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
-                        <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-600 text-white">NÍVEL 6+ (EQUIPE)</span>
-                        ${showHC ? `<span class="text-[9px] font-mono text-slate-400">Total Ind: ${node.hcIndirect}</span>` : ''}
+                <div class="relative inline-flex flex-col ${cardBg} border border-amber-500/40 rounded-2xl p-3 shadow-md w-72 text-left">
+                    <div class="flex items-center justify-between pb-1">
+                        <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-sm">
+                            L7+ • AGRUPADO POR CARGO
+                        </span>
+                        ${showHC ? `<span class="text-[10px] font-bold font-mono text-emerald-600 dark:text-emerald-400">HC Total: ${node.hcIndirect}</span>` : ''}
                     </div>
                     ${summaryHTML}
                 </div>`;
         }
 
         function renderCircleCard(node, isEditor = false) {
-            const ringClass = `lvl-ring-${node.level}` in CSS ? `lvl-ring-${node.level}` : 'lvl-ring-default';
+            const styles = getLevelStyles(node.level);
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${ringClass} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
-                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${ringClass} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
+                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
+                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
 
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
@@ -913,7 +939,8 @@
             const isCompact = layoutFormat === 'horizontal-compact';
             const isCollapsed = collapsedNodes.has(node.numcad);
 
-            if (node.level > 6 && node.children.length > 0 && !isCollapsed) {
+            // Agrupa por CARGO todos os subordinados a partir do L7 (filhos do L6) na visualização principal
+            if (!isEditor && node.level >= 6 && node.children.length > 0 && !isCollapsed) {
                 return `<li>${renderPillCard(node, isCompact, isEditor)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
             }
 
@@ -1130,7 +1157,7 @@
                 if (e.button === 0 || e.button === 2) {
                     isPanning = true;
                     startX = e.clientX - translateX;
-                    startY = e.clientY - startY;
+                    startY = e.clientY - translateY;
                 }
             });
         });
