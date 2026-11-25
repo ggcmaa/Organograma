@@ -101,6 +101,16 @@
         .viewport-drag { cursor: grab; user-select: none; }
         .viewport-drag:active { cursor: grabbing; }
 
+        /* Estilos de Drag & Drop no Editor */
+        .editor-card-draggable { cursor: grab; }
+        .editor-card-draggable:active { cursor: grabbing; }
+        .editor-card-dragging { opacity: 0.45; transform: scale(0.96); }
+        .drop-target-hover {
+            outline: 2px dashed #10b981 !important;
+            outline-offset: 4px;
+            background-color: rgba(16, 185, 129, 0.08) !important;
+        }
+
         .lvl-badge-1 { background-color: #0d9488; color: white; }
         .lvl-ring-1 { border-color: #0d9488; }
         .lvl-badge-2 { background-color: #16a34a; color: white; }
@@ -154,9 +164,15 @@
             </div>
             <form id="nodeForm" onsubmit="handleFormSubmit(event)" class="space-y-3 text-left">
                 <input type="hidden" id="formOriginalNumcad">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Matrícula (NUMCAD)</label>
-                    <input type="text" id="formNumcad" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Matrícula (NUMCAD)</label>
+                        <input type="text" id="formNumcad" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nível (NIVEL)</label>
+                        <input type="text" id="formNivel" placeholder="Ex: LIDERANÇA, OPERACIONAL" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo</label>
@@ -229,7 +245,7 @@
             </select>
 
             <select id="sortBy" onchange="applyAllFilters()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
-                <option value="default">Ordem Padrão</option>
+                <option value="default">Ordem Padrão / Manual</option>
                 <option value="name">Nome (A-Z)</option>
                 <option value="hc">Maior Headcount</option>
                 <option value="id">Matrícula</option>
@@ -299,7 +315,7 @@
                 <div id="tree-root" class="tf-tree layout-vertical">
                     <div class="text-center mt-20 text-slate-400">
                         <i data-lucide="file-up" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-                        <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, CC, SUBPROCESSO, UNIDADE, FOTO</code></p>
+                        <p class="text-sm font-medium text-slate-600">Importe o arquivo CSV com as colunas:<br><code class="text-xs text-emerald-600 font-mono">NUMCAD, NOME, NUMLID, CARGO, NIVEL, CC, SUBPROCESSO, UNIDADE, FOTO</code></p>
                     </div>
                 </div>
             </div>
@@ -309,12 +325,12 @@
     <!-- ABA 2: EDITOR VISUAL INTERATIVO DA HIERARQUIA -->
     <main id="tabEditorContainer" class="flex-1 overflow-hidden relative w-full h-full bg-slate-50 hidden viewport-drag">
         <!-- BARRA FLUTUANTE DE AÇÕES DO EDITOR -->
-        <div class="absolute top-4 left-6 z-20 bg-white/90 backdrop-blur border border-slate-200 rounded-2xl p-3 shadow-lg flex items-center gap-4">
+        <div class="absolute top-4 left-6 z-20 bg-white/95 backdrop-blur border border-slate-200 rounded-2xl p-3 shadow-lg flex items-center gap-4">
             <div>
                 <h2 class="text-xs font-bold text-slate-800">Editor Visual de Caixas</h2>
-                <p class="text-[10px] text-slate-500">Manipule as caixas da hierarquia diretamente no mapa.</p>
+                <p class="text-[10px] text-slate-500">Use as setas (<i data-lucide="arrow-left-right" class="w-2.5 h-2.5 inline"></i>) ou <b>arraste e solte</b> uma caixa sobre outra para reordenar ou trocar de líder.</p>
             </div>
-            <button onclick="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow">
+            <button onclick="openCreateModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow shrink-0">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Inserir No Topo
             </button>
         </div>
@@ -339,6 +355,7 @@
         let collapsedNodes = new Set();
         let selectedLevels = new Set();
         let maxGlobalDepth = 0;
+        let draggedNodeId = null;
 
         // Controle de Zoom e Arrasto (Compartilhado)
         let zoomLevel = 1, isPanning = false, startX = 0, startY = 0, translateX = 0, translateY = 0;
@@ -347,6 +364,19 @@
 
         const panContainer = document.getElementById('pan-container');
         const panContainerEditor = document.getElementById('pan-container-editor');
+
+        // Helper para normalizar o texto da coluna NIVEL (remove acentos e deixa maiúsculo)
+        function normalizeNivel(val) {
+            return String(val || '')
+                .trim()
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .toUpperCase();
+        }
+
+        function isOperacional(node) {
+            return normalizeNivel(node.nivel) === 'OPERACIONAL';
+        }
 
         // TROCA DE ABAS
         function switchTab(tab) {
@@ -446,7 +476,11 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    globalData = results.data;
+                    // Inicializa ordem explícita para permitir reordenação manual livre
+                    globalData = results.data.map((row, idx) => ({
+                        ...row,
+                        _sortOrder: idx
+                    }));
                     collapsedNodes.clear();
                     populateAutocomplete();
                     populateSubProcessFilter();
@@ -455,9 +489,150 @@
             });
         });
 
+        // GARANTE ORDEM NUMÉRICA CONSISTENTE EM TODO O DATASET
+        function ensureSortOrders() {
+            globalData.forEach((item, idx) => {
+                if (typeof item._sortOrder !== 'number') {
+                    item._sortOrder = idx;
+                }
+            });
+        }
+
+        // MOVIMENTAÇÃO ENTRE IRMÃOS (ESQUERDA/CIMA OU DIREITA/BAIXO)
+        function moveNodeOrder(numcad, direction) {
+            ensureSortOrders();
+            const targetId = String(numcad).trim();
+            const targetItem = globalData.find(i => String(i.NUMCAD).trim() === targetId);
+            if (!targetItem) return;
+
+            const parentId = String(targetItem.NUMLID || '').trim();
+
+            // Pega todos os irmãos (mesmo NUMLID) na ordem atual
+            const siblings = globalData
+                .filter(i => String(i.NUMCAD || '').trim() && String(i.NUMLID || '').trim() === parentId)
+                .sort((a, b) => a._sortOrder - b._sortOrder);
+
+            const currentIndex = siblings.findIndex(i => String(i.NUMCAD).trim() === targetId);
+            const swapIndex = currentIndex + direction;
+
+            if (currentIndex === -1 || swapIndex < 0 || swapIndex >= siblings.length) return;
+
+            // Troca a posição no array de irmãos e reatribui os valores de _sortOrder
+            const temp = siblings[currentIndex];
+            siblings[currentIndex] = siblings[swapIndex];
+            siblings[swapIndex] = temp;
+
+            const sortedOrders = siblings.map(s => s._sortOrder).sort((a, b) => a - b);
+            siblings.forEach((sib, idx) => {
+                sib._sortOrder = sortedOrders[idx];
+            });
+
+            // Força o seletor de ordenação para "Ordem Padrão / Manual" para refletir o ajuste imediatamente
+            document.getElementById('sortBy').value = 'default';
+            applyAllFilters();
+        }
+
+        // VERIFICA SE UM NÓ É DESCENDENTE DE OUTRO (EVITA CICLOS NO DRAG & DROP)
+        function isDescendant(potentialDescendantId, ancestorId) {
+            let currentId = String(potentialDescendantId).trim();
+            const targetAncestor = String(ancestorId).trim();
+            const visited = new Set();
+
+            while (currentId && !visited.has(currentId)) {
+                if (currentId === targetAncestor) return true;
+                visited.add(currentId);
+                const node = globalData.find(i => String(i.NUMCAD).trim() === currentId);
+                currentId = node ? String(node.NUMLID || '').trim() : '';
+            }
+            return false;
+        }
+
+        // EVENTOS DE DRAG & DROP DAS CAIXAS NO EDITOR
+        function handleCardDragStart(event, numcad) {
+            draggedNodeId = String(numcad).trim();
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', draggedNodeId);
+            event.currentTarget.classList.add('editor-card-dragging');
+        }
+
+        function handleCardDragEnd(event) {
+            event.currentTarget.classList.remove('editor-card-dragging');
+            document.querySelectorAll('.drop-target-hover').forEach(el => el.classList.remove('drop-target-hover'));
+            draggedNodeId = null;
+        }
+
+        function handleCardDragOver(event, targetNumcad) {
+            event.preventDefault();
+            const targetId = String(targetNumcad).trim();
+            if (!draggedNodeId || draggedNodeId === targetId) return;
+            if (isDescendant(targetId, draggedNodeId)) {
+                event.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-target-hover');
+        }
+
+        function handleCardDragLeave(event) {
+            event.currentTarget.classList.remove('drop-target-hover');
+        }
+
+        function handleCardDrop(event, targetNumcad) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.classList.remove('drop-target-hover');
+
+            const sourceId = draggedNodeId || event.dataTransfer.getData('text/plain');
+            const targetId = String(targetNumcad).trim();
+
+            if (!sourceId || !targetId || sourceId === targetId) return;
+            if (isDescendant(targetId, sourceId)) {
+                alert("Não é possível mover um líder para dentro da sua própria equipe.");
+                return;
+            }
+
+            const sourceItem = globalData.find(i => String(i.NUMCAD).trim() === sourceId);
+            const targetItem = globalData.find(i => String(i.NUMCAD).trim() === targetId);
+            if (!sourceItem || !targetItem) return;
+
+            ensureSortOrders();
+            const sourceParent = String(sourceItem.NUMLID || '').trim();
+            const targetParent = String(targetItem.NUMLID || '').trim();
+
+            if (sourceParent === targetParent) {
+                // Mesmo líder: reordena entre irmãos colocando na posição do alvo
+                const siblings = globalData
+                    .filter(i => String(i.NUMCAD || '').trim() && String(i.NUMLID || '').trim() === targetParent)
+                    .sort((a, b) => a._sortOrder - b._sortOrder);
+
+                const oldIdx = siblings.findIndex(i => String(i.NUMCAD).trim() === sourceId);
+                const newIdx = siblings.findIndex(i => String(i.NUMCAD).trim() === targetId);
+
+                if (oldIdx !== -1 && newIdx !== -1) {
+                    const [moved] = siblings.splice(oldIdx, 1);
+                    siblings.splice(newIdx, 0, moved);
+
+                    const sortedOrders = siblings.map(s => s._sortOrder).sort((a, b) => a - b);
+                    siblings.forEach((sib, idx) => {
+                        sib._sortOrder = sortedOrders[idx];
+                    });
+                }
+            } else {
+                // Líderes diferentes: vincula o card arrastado como subordinado direto do card alvo
+                sourceItem.NUMLID = targetId;
+                const maxOrder = globalData.reduce((max, item) => Math.max(max, item._sortOrder || 0), 0);
+                sourceItem._sortOrder = maxOrder + 1;
+            }
+
+            document.getElementById('sortBy').value = 'default';
+            populateLideresSelect();
+            applyAllFilters();
+        }
+
         // POPULAR SELETORES DO FORMULÁRIO DE EDIÇÃO
         function populateLideresSelect(selectedNumlid = "") {
             const select = document.getElementById('formNumlid');
+            if (!select) return;
             select.innerHTML = '<option value="">Sem Líder (Topo da Árvore)</option>';
             globalData.forEach(item => {
                 if (item.NUMCAD && item.NOME) {
@@ -474,6 +649,7 @@
             document.getElementById('modalTitle').innerText = parentNumcad ? "Inserir Subordinado Direto" : "Inserir Novo Colaborador / Cargo";
             document.getElementById('formOriginalNumcad').value = "";
             document.getElementById('formNumcad').value = Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('formNivel').value = "";
             document.getElementById('formNome').value = "";
             document.getElementById('formCargo').value = "";
             document.getElementById('formSubprocesso').value = "Geral";
@@ -488,6 +664,7 @@
             document.getElementById('modalTitle').innerText = "Editar Bloco da Hierarquia";
             document.getElementById('formOriginalNumcad').value = item.NUMCAD;
             document.getElementById('formNumcad').value = item.NUMCAD;
+            document.getElementById('formNivel').value = item.NIVEL || "";
             document.getElementById('formNome').value = item.NOME;
             document.getElementById('formCargo').value = item.CARGO;
             document.getElementById('formSubprocesso').value = item.SUBPROCESSO || item.SUBPROC || "Geral";
@@ -504,6 +681,7 @@
             e.preventDefault();
             const origNumcad = document.getElementById('formOriginalNumcad').value;
             const numcad = document.getElementById('formNumcad').value.trim();
+            const nivel = document.getElementById('formNivel').value.trim();
             const nome = document.getElementById('formNome').value.trim();
             const cargo = document.getElementById('formCargo').value.trim();
             const numlid = document.getElementById('formNumlid').value.trim();
@@ -514,6 +692,7 @@
                 const item = globalData.find(i => String(i.NUMCAD).trim() === String(origNumcad).trim());
                 if (item) {
                     item.NUMCAD = numcad;
+                    item.NIVEL = nivel;
                     item.NOME = nome;
                     item.CARGO = cargo;
                     item.NUMLID = numlid;
@@ -521,14 +700,17 @@
                     item.UNIDADE = unidade;
                 }
             } else {
+                const maxOrder = globalData.reduce((max, item) => Math.max(max, item._sortOrder || 0), 0);
                 globalData.push({
                     NUMCAD: numcad,
+                    NIVEL: nivel,
                     NOME: nome,
                     CARGO: cargo,
                     NUMLID: numlid,
                     SUBPROCESSO: subprocesso,
                     UNIDADE: unidade,
-                    FOTO: ""
+                    FOTO: "",
+                    _sortOrder: maxOrder + 1
                 });
             }
 
@@ -618,6 +800,7 @@
         }
 
         function initApp() {
+            ensureSortOrders();
             const map = {};
             globalData.forEach(row => {
                 const numcad = String(row.NUMCAD || '').trim();
@@ -627,9 +810,11 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
+                    nivel: String(row.NIVEL || '').trim(),
                     unidade: row.UNIDADE || row.CC || 'S/U',
                     subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
                     foto: row.FOTO || '',
+                    _sortOrder: row._sortOrder,
                     children: []
                 };
             });
@@ -690,6 +875,7 @@
         // MOTOR DE FILTRAGEM UNIFICADO (FUNCIONAL NA ÁRVORE E NO EDITOR)
         function applyAllFilters() {
             if (globalData.length === 0) return;
+            ensureSortOrders();
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const subProcessFilter = document.getElementById('subProcessFilter').value;
             const sortBy = document.getElementById('sortBy').value;
@@ -704,9 +890,11 @@
                     nome: row.NOME || 'Sem Nome',
                     numlid: String(row.NUMLID || '').trim(),
                     cargo: row.CARGO || 'Cargo não informado',
+                    nivel: String(row.NIVEL || '').trim(),
                     unidade: row.UNIDADE || row.CC || 'S/U',
                     subprocesso: (row.SUBPROCESSO || row.SUBPROC || 'Geral').trim(),
                     foto: row.FOTO || '',
+                    _sortOrder: row._sortOrder,
                     children: [],
                     level: 1
                 };
@@ -739,9 +927,13 @@
                     if (sortBy === 'name') return a.nome.localeCompare(b.nome);
                     if (sortBy === 'hc') return b.hcIndirect - a.hcIndirect;
                     if (sortBy === 'id') return a.numcad.localeCompare(b.numcad);
-                    return 0;
+                    return (a._sortOrder || 0) - (b._sortOrder || 0);
                 });
-                nodes.forEach(n => sortNodes(n.children));
+                nodes.forEach((n, idx) => {
+                    n.siblingIndex = idx;
+                    n.siblingTotal = nodes.length;
+                    sortNodes(n.children);
+                });
             }
             sortNodes(roots);
 
@@ -778,8 +970,10 @@
             }
 
             function pruneCollapsed(nodes) {
-                return nodes.map(node => {
+                return nodes.map((node, idx) => {
                     let copy = { ...node };
+                    copy.siblingIndex = idx;
+                    copy.siblingTotal = nodes.length;
                     copy.hasOriginalChildren = node.children && node.children.length > 0;
                     if (collapsedNodes.has(copy.numcad)) {
                         copy.children = [];
@@ -810,15 +1004,15 @@
             };
         }
 
-        // RENDERIZAÇÃO DAS CAIXAS DO ORGANOGRAMA COM UNIDADE E OPÇÃO DE OCULTAR HC
+        // RENDERIZAÇÃO DAS CAIXAS DO ORGANOGRAMA COM UNIDADE, NÍVEL E CONTROLES DO EDITOR
         function renderPillCard(node, isCompactMode = false, isEditor = false) {
             const styles = getLevelStyles(node.level);
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${styles.ring} shadow shrink-0" crossorigin="anonymous">`
-                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${styles.ring} shadow shrink-0 pointer-events-none" crossorigin="anonymous">`
+                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 pointer-events-none"><i data-lucide="user" class="w-5 h-5"></i></div>`;
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
@@ -835,19 +1029,37 @@
                     </div>`;
             }
 
+            const canMovePrev = node.siblingIndex > 0;
+            const canMoveNext = node.siblingIndex < (node.siblingTotal - 1);
+
             const actionButtonsHTML = isEditor ? `
-                <div class="absolute -top-3 left-3 flex items-center gap-1 bg-slate-900/90 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                <div class="absolute -top-3.5 left-2 flex items-center gap-0.5 bg-slate-900/95 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                    <span class="p-0.5 text-slate-400 cursor-grab" title="Arraste esta caixa para reordenar ou trocar de líder"><i data-lucide="grip-vertical" class="w-3 h-3"></i></span>
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', -1)" ${!canMovePrev ? 'disabled' : ''} class="p-1 ${canMovePrev ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Esquerda / Acima"><i data-lucide="arrow-left" class="w-3 h-3"></i></button>
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', 1)" ${!canMoveNext ? 'disabled' : ''} class="p-1 ${canMoveNext ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Direita / Abaixo"><i data-lucide="arrow-right" class="w-3 h-3"></i></button>
+                    <span class="w-px h-3 bg-slate-700 mx-0.5"></span>
                     <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-1 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
                     <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-1 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-3 h-3"></i></button>
                     <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-1 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                 </div>` : '';
 
+            const dragAttributes = isEditor ? `
+                draggable="true"
+                ondragstart="handleCardDragStart(event, '${node.numcad}')"
+                ondragend="handleCardDragEnd(event)"
+                ondragover="handleCardDragOver(event, '${node.numcad}')"
+                ondragleave="handleCardDragLeave(event)"
+                ondrop="handleCardDrop(event, '${node.numcad}')"
+            ` : '';
+
+            const editorCursorClass = isEditor ? 'editor-card-draggable' : 'cursor-pointer';
             const cardWidth = isCompactMode ? 'w-64 min-h-[86px]' : 'w-72 min-h-[90px]';
             const unidadeText = node.unidade ? `UN: ${node.unidade}` : 'S/U';
             const hcHTML = showHC ? `<span>•</span><span class="text-emerald-600 font-bold" title="HC Direto / Indireto">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>` : '';
+            const nivelTagHTML = node.nivel ? `<span class="bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Nível CSV">${node.nivel}</span>` : '';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer group">
+                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all ${editorCursorClass} group">
                     ${actionButtonsHTML}
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${styles.badge} shadow-sm">
                         L${node.level}
@@ -860,6 +1072,7 @@
                         <div class="flex items-center gap-1 mt-1.5 text-[9px] text-slate-400 font-mono flex-wrap">
                             <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Subprocesso">${node.subprocesso}</span>
                             <span class="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold px-1.5 py-0.5 rounded leading-none" title="Unidade">${unidadeText}</span>
+                            ${nivelTagHTML}
                             ${hcHTML}
                         </div>
                     </div>
@@ -867,17 +1080,21 @@
                 </div>`;
         }
 
-        // CARTÃO DE AGRUPAMENTO POR CARGO A PARTIR DO NÍVEL 7 (L7+)
-        function renderCargoSummaryCard(node) {
+        // CARTÃO DE AGRUPAMENTO POR CARGO PARA COLABORADORES COM NIVEL = OPERACIONAL
+        function renderCargoSummaryCard(operacionalNodes) {
             const cargoCounts = {};
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+            let totalOperacionalHC = 0;
 
             function collectCargos(n) {
                 const cargoNome = (n.cargo || 'Cargo não informado').trim();
                 cargoCounts[cargoNome] = (cargoCounts[cargoNome] || 0) + 1;
-                n.children.forEach(collectCargos);
+                totalOperacionalHC += 1;
+                if (n.children && n.children.length > 0) {
+                    n.children.forEach(collectCargos);
+                }
             }
-            node.children.forEach(collectCargos);
+            operacionalNodes.forEach(collectCargos);
 
             // Ordena os cargos do maior HC para o menor
             const sortedCargos = Object.entries(cargoCounts).sort((a, b) => b[1] - a[1]);
@@ -900,9 +1117,9 @@
                 <div class="relative inline-flex flex-col ${cardBg} border border-amber-500/40 rounded-2xl p-3 shadow-md w-72 text-left">
                     <div class="flex items-center justify-between pb-1">
                         <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-sm">
-                            L7+ • AGRUPADO POR CARGO
+                            OPERACIONAL • POR CARGO
                         </span>
-                        ${showHC ? `<span class="text-[10px] font-bold font-mono text-emerald-600 dark:text-emerald-400">HC Total: ${node.hcIndirect}</span>` : ''}
+                        ${showHC ? `<span class="text-[10px] font-bold font-mono text-emerald-600 dark:text-emerald-400">HC: ${totalOperacionalHC}</span>` : ''}
                     </div>
                     ${summaryHTML}
                 </div>`;
@@ -916,8 +1133,8 @@
 
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
-                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
+                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto pointer-events-none" crossorigin="anonymous">`
+                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto pointer-events-none"><i data-lucide="user" class="w-7 h-7"></i></div>`;
 
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
@@ -941,15 +1158,31 @@
                 }
             }
 
+            const canMovePrev = node.siblingIndex > 0;
+            const canMoveNext = node.siblingIndex < (node.siblingTotal - 1);
+
             const actionButtonsHTML = isEditor ? `
-                <div class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900/90 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
-                    <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-1 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
-                    <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-1 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-3 h-3"></i></button>
-                    <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-1 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-slate-900/95 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', -1)" ${!canMovePrev ? 'disabled' : ''} class="p-0.5 ${canMovePrev ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Esquerda"><i data-lucide="arrow-left" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', 1)" ${!canMoveNext ? 'disabled' : ''} class="p-0.5 ${canMoveNext ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Direita"><i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-0.5 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-0.5 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-0.5 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i></button>
                 </div>` : '';
 
+            const dragAttributes = isEditor ? `
+                draggable="true"
+                ondragstart="handleCardDragStart(event, '${node.numcad}')"
+                ondragend="handleCardDragEnd(event)"
+                ondragover="handleCardDragOver(event, '${node.numcad}')"
+                ondragleave="handleCardDragLeave(event)"
+                ondrop="handleCardDrop(event, '${node.numcad}')"
+            ` : '';
+
+            const editorCursorClass = isEditor ? 'editor-card-draggable' : 'cursor-pointer';
+
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-28 text-center cursor-pointer group p-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
+                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-28 text-center ${editorCursorClass} group p-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
                     ${actionButtonsHTML}
                     <div class="relative mb-1">
                         ${levelBadgeHTML}
@@ -969,28 +1202,55 @@
             const useCircle = layoutFormat === 'compact' && isVisualLeaf;
             const isCompact = layoutFormat === 'horizontal-compact';
 
-            // Agrupa por CARGO todos os subordinados a partir do L7 (filhos do L6) na visualização principal
-            if (!isEditor && node.level >= 6 && node.children.length > 0 && !isCollapsed) {
-                return `<li>${renderPillCard(node, isCompact, isEditor)}<ul><li>${renderCargoSummaryCard(node)}</li></ul></li>`;
-            }
-
             let html = `<li>${useCircle ? renderCircleCard(node, isEditor) : renderPillCard(node, isCompact, isEditor)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
-                const allChildrenAreVisualLeaves = node.children.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
+                if (!isEditor) {
+                    // Separa os subordinados diretos entre NIVEL === 'OPERACIONAL' e os demais níveis
+                    const operacionalChildren = node.children.filter(c => isOperacional(c));
+                    const nonOperacionalChildren = node.children.filter(c => !isOperacional(c));
 
-                if (layoutFormat === 'compact' && allChildrenAreVisualLeaves) {
-                    html += `<div class="grid-compact">`;
-                    node.children.forEach(child => {
-                        html += `<div>${renderCircleCard(child, isEditor)}</div>`;
-                    });
-                    html += `</div>`;
+                    if (operacionalChildren.length > 0 && nonOperacionalChildren.length === 0) {
+                        // Todos os subordinados diretos deste líder são OPERACIONAL: agrupa por cargo em um único card
+                        html += `<ul><li>${renderCargoSummaryCard(operacionalChildren)}</li></ul>`;
+                    } else {
+                        // Possui subordinados não-operacionais (e eventualmente operacionais misturados sob o mesmo líder)
+                        const allNonOpAreLeaves = nonOperacionalChildren.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
+
+                        if (layoutFormat === 'compact' && allNonOpAreLeaves && operacionalChildren.length === 0) {
+                            html += `<div class="grid-compact">`;
+                            nonOperacionalChildren.forEach(child => {
+                                html += `<div>${renderCircleCard(child, isEditor)}</div>`;
+                            });
+                            html += `</div>`;
+                        } else {
+                            html += '<ul>';
+                            nonOperacionalChildren.forEach(child => {
+                                html += renderNodeHTML(child, layoutFormat, isEditor);
+                            });
+                            if (operacionalChildren.length > 0) {
+                                html += `<li>${renderCargoSummaryCard(operacionalChildren)}</li>`;
+                            }
+                            html += '</ul>';
+                        }
+                    }
                 } else {
-                    html += '<ul>';
-                    node.children.forEach(child => {
-                        html += renderNodeHTML(child, layoutFormat, isEditor);
-                    });
-                    html += '</ul>';
+                    // Na aba do Editor, exibe todas as caixas individualmente para permitir movimentação e edição livre
+                    const allChildrenAreVisualLeaves = node.children.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
+
+                    if (layoutFormat === 'compact' && allChildrenAreVisualLeaves) {
+                        html += `<div class="grid-compact">`;
+                        node.children.forEach(child => {
+                            html += `<div>${renderCircleCard(child, isEditor)}</div>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += '<ul>';
+                        node.children.forEach(child => {
+                            html += renderNodeHTML(child, layoutFormat, isEditor);
+                        });
+                        html += '</ul>';
+                    }
                 }
             }
             html += '</li>';
@@ -1012,10 +1272,16 @@
                 container.className = 'tf-tree layout-vertical';
             }
 
+            const operacionalRoots = roots.filter(r => isOperacional(r));
+            const nonOperacionalRoots = roots.filter(r => !isOperacional(r));
+
             let html = '<ul>';
-            roots.forEach(root => {
+            nonOperacionalRoots.forEach(root => {
                 html += renderNodeHTML(root, layoutFormat, false);
             });
+            if (operacionalRoots.length > 0) {
+                html += `<li>${renderCargoSummaryCard(operacionalRoots)}</li>`;
+            }
             html += '</ul>';
 
             container.innerHTML = html;
@@ -1186,6 +1452,9 @@
         document.querySelectorAll('.viewport-drag').forEach(vp => {
             vp.addEventListener('contextmenu', (e) => e.preventDefault());
             vp.addEventListener('mousedown', (e) => {
+                // Evita iniciar o pan da tela caso o usuário esteja clicando/arrastando uma caixa no Editor
+                if (e.target.closest('.editor-card-draggable')) return;
+
                 if (e.button === 0 || e.button === 2) {
                     isPanning = true;
                     startX = e.clientX - translateX;
