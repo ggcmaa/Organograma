@@ -780,6 +780,7 @@
             function pruneCollapsed(nodes) {
                 return nodes.map(node => {
                     let copy = { ...node };
+                    copy.hasOriginalChildren = node.children && node.children.length > 0;
                     if (collapsedNodes.has(copy.numcad)) {
                         copy.children = [];
                     } else {
@@ -821,7 +822,7 @@
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
-            const hasChildren = node.children.length > 0;
+            const hasChildren = node.children.length > 0 || node.hasOriginalChildren;
 
             let toggleIndicator = '';
             if (hasChildren) {
@@ -909,12 +910,36 @@
 
         function renderCircleCard(node, isEditor = false) {
             const styles = getLevelStyles(node.level);
+            const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+            const isCollapsed = collapsedNodes.has(node.numcad);
+            const hasTeam = node.hasOriginalChildren || node.hcIndirect > 0;
+
             const hasFoto = node.foto && node.foto.length > 5;
             const fotoHTML = hasFoto 
                 ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto" crossorigin="anonymous">`
                 : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto"><i data-lucide="user" class="w-7 h-7"></i></div>`;
 
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
+
+            const levelBadgeHTML = `
+                <span class="absolute -top-1 left-0 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${styles.badge} shadow-sm z-10">
+                    L${node.level}
+                </span>`;
+
+            let collapsedBadgeHTML = '';
+            let hcTextHTML = '';
+            if (hasTeam) {
+                if (isCollapsed) {
+                    collapsedBadgeHTML = `
+                        <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5 z-10 whitespace-nowrap" title="Gestão fechada: ${node.hcIndirect} liderados">
+                            <span>+${node.hcIndirect}</span>
+                            <i data-lucide="chevron-right" class="w-2.5 h-2.5"></i>
+                        </div>`;
+                }
+                if (showHC) {
+                    hcTextHTML = `<span class="text-[8px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5" title="HC Direto / Indireto">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>`;
+                }
+            }
 
             const actionButtonsHTML = isEditor ? `
                 <div class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900/90 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
@@ -924,20 +949,25 @@
                 </div>` : '';
 
             return `
-                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-24 text-center cursor-pointer group">
+                <div onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-28 text-center cursor-pointer group p-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
                     ${actionButtonsHTML}
-                    <div class="relative">${fotoHTML}</div>
-                    <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1.5 block" title="${node.nome}">${node.nome.split(' ')[0]}</span>
-                    <span class="text-[8px] text-slate-400 break-words w-full block" title="${node.cargo}">${node.cargo}</span>
-                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded mt-0.5 break-words w-full" title="${node.subprocesso}">${node.subprocesso}</span>
+                    <div class="relative mb-1">
+                        ${levelBadgeHTML}
+                        ${fotoHTML}
+                        ${collapsedBadgeHTML}
+                    </div>
+                    <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1 block leading-tight" title="${node.nome}">${node.nome.split(' ')[0]}</span>
+                    <span class="text-[8px] text-slate-500 dark:text-slate-400 break-words w-full block leading-tight mt-0.5" title="${node.cargo}">${node.cargo}</span>
+                    ${hcTextHTML}
+                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded mt-0.5 break-words w-full truncate" title="${node.subprocesso}">${node.subprocesso}</span>
                 </div>`;
         }
 
         function renderNodeHTML(node, layoutFormat, isEditor = false) {
-            const isLeaf = node.children.length === 0;
-            const useCircle = layoutFormat === 'compact' && isLeaf;
-            const isCompact = layoutFormat === 'horizontal-compact';
             const isCollapsed = collapsedNodes.has(node.numcad);
+            const isVisualLeaf = node.children.length === 0;
+            const useCircle = layoutFormat === 'compact' && isVisualLeaf;
+            const isCompact = layoutFormat === 'horizontal-compact';
 
             // Agrupa por CARGO todos os subordinados a partir do L7 (filhos do L6) na visualização principal
             if (!isEditor && node.level >= 6 && node.children.length > 0 && !isCollapsed) {
@@ -947,7 +977,9 @@
             let html = `<li>${useCircle ? renderCircleCard(node, isEditor) : renderPillCard(node, isCompact, isEditor)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
-                if (layoutFormat === 'compact' && node.children.every(c => c.children.length === 0)) {
+                const allChildrenAreVisualLeaves = node.children.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
+
+                if (layoutFormat === 'compact' && allChildrenAreVisualLeaves) {
                     html += `<div class="grid-compact">`;
                     node.children.forEach(child => {
                         html += `<div>${renderCircleCard(child, isEditor)}</div>`;
