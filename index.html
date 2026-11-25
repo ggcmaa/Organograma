@@ -60,6 +60,71 @@
             border-left: 2px solid #cbd5e1; width: 0; height: 24px;
         }
 
+        /* Layout Síntese Executiva Ultracompacto (Multi-Diretorias e Multi-Níveis) */
+        .layout-executive-grid ul { display: flex; justify-content: center; position: relative; padding-top: 16px; transition: all 0.3s; }
+        .layout-executive-grid li { text-align: center; list-style-type: none; position: relative; padding: 16px 6px 0 6px; }
+        .layout-executive-grid li::before, .layout-executive-grid li::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 1.5px solid #94a3b8; width: 50%; height: 16px;
+        }
+        .layout-executive-grid li::after { right: auto; left: 50%; border-left: 1.5px solid #94a3b8; }
+        .layout-executive-grid li:only-child::after, .layout-executive-grid li:only-child::before { display: none; }
+        .layout-executive-grid li:only-child { padding-top: 0; }
+        .layout-executive-grid li:first-child::before, .layout-executive-grid li:last-child::after { border: 0 none; }
+        .layout-executive-grid li:last-child::before { border-right: 1.5px solid #94a3b8; border-radius: 0 4px 0 0; }
+        .layout-executive-grid li:first-child::after { border-radius: 4px 0 0 0; }
+        .layout-executive-grid ul ul::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            border-left: 1.5px solid #94a3b8; width: 0; height: 16px;
+        }
+        .dark .layout-executive-grid li::before,
+        .dark .layout-executive-grid li::after,
+        .dark .layout-executive-grid ul ul::before {
+            border-color: #64748b;
+        }
+
+        /* Cluster de Níveis Inferiores (L4+) em Colunas Verticais */
+        .exec-lower-vertical-grid {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(226, 232, 240, 0.55);
+            border: 1px dashed rgba(148, 163, 184, 0.65);
+        }
+        .dark .exec-lower-vertical-grid {
+            background: rgba(30, 41, 59, 0.55);
+            border-color: rgba(100, 116, 139, 0.5);
+        }
+        .exec-vertical-column {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+        }
+        .exec-vertical-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 4px;
+        }
+        .exec-vertical-sublist {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 8px;
+            padding-left: 6px;
+            border-left: 1.5px solid #cbd5e1;
+        }
+        .dark .exec-vertical-sublist {
+            border-left-color: #475569;
+        }
+
         /* Layout Horizontal Estilo Diagrama */
         .layout-horizontal ul { display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 36px; transition: all 0.3s; }
         .layout-horizontal li { text-align: left; list-style-type: none; position: relative; padding: 14px 0 14px 24px; display: flex; align-items: center; }
@@ -227,18 +292,36 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap justify-end">
-            <!-- Pesquisa de Nome com Autocomplete -->
-            <div class="relative w-44">
-                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="searchInput" list="employeesList" placeholder="Pesquisar..." 
-                    class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
-                    oninput="applyAllFilters()">
-                <datalist id="employeesList"></datalist>
+            <!-- Seleção Múltipla de Pessoas / Diretorias -->
+            <div class="relative w-48" id="peopleMultiSelectWrapper">
+                <button type="button" onclick="togglePeopleDropdown()" id="peopleDropdownBtn"
+                    class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition flex items-center justify-between gap-1.5">
+                    <span class="flex items-center gap-1.5 min-w-0">
+                        <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                        <span id="peopleBtnText" class="truncate">Pessoas / Dir. (Todos)</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                </button>
+                <div id="peopleDropdownPanel" class="absolute left-0 mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl hidden z-50 p-3 space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                        <span class="text-[11px] font-bold text-slate-700">Selecionar Múltiplas Pessoas</span>
+                        <button type="button" onclick="clearSelectedPeople()" class="text-[10px] text-emerald-600 hover:underline font-semibold">Limpar</button>
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="peopleSearchFilter" oninput="renderPeopleCheckboxList()" placeholder="Filtrar nome, cargo ou matrícula..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2.5 py-1 text-[11px] text-slate-700 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div id="peopleCheckboxesList" class="space-y-1 max-h-56 overflow-y-auto pr-1">
+                        <!-- Gerado dinamicamente -->
+                    </div>
+                </div>
             </div>
 
             <!-- Filtro de Layout -->
             <select id="layoutFormat" onchange="applyAllFilters()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition">
                 <option value="tree">Árvore Expandida (Vertical)</option>
+                <option value="executive-grid">Síntese Executiva (Multi-Diretorias)</option>
                 <option value="horizontal">Árvore Horizontal</option>
                 <option value="horizontal-compact">Árvore Horizontal Compacta</option>
                 <option value="compact">Grade Compacta (Imagem)</option>
@@ -255,6 +338,12 @@
             <select id="hcVisibilityFilter" onchange="applyAllFilters()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition font-medium">
                 <option value="show">HC: Mostrar</option>
                 <option value="hide">HC: Ocultar</option>
+            </select>
+
+            <!-- Filtro de Exibição de Fotos -->
+            <select id="photoVisibilityFilter" onchange="applyAllFilters()" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-emerald-500 transition font-medium" title="Exibir ou ocultar fotos dos colaboradores">
+                <option value="yes">Fotos: Sim</option>
+                <option value="no">Fotos: Não</option>
             </select>
 
             <!-- Filtro de Subprocesso -->
@@ -354,6 +443,7 @@
         let currentFilteredRoots = [];
         let collapsedNodes = new Set();
         let selectedLevels = new Set();
+        let selectedPeople = new Set();
         let maxGlobalDepth = 0;
         let draggedNodeId = null;
 
@@ -370,12 +460,67 @@
             return String(val || '')
                 .trim()
                 .normalize('NFD')
-                .replace(/[̀-ͯ]/g, '')
+                .replace(/[\u0300-\u036f]/g, '')
                 .toUpperCase();
         }
 
         function isOperacional(node) {
             return normalizeNivel(node.nivel) === 'OPERACIONAL';
+        }
+
+        // Helper para extrair apenas o primeiro e último nome
+        function getFirstAndLastName(fullName) {
+            const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+            if (parts.length <= 1) return parts[0] || 'Sem Nome';
+            return `${parts[0]} ${parts[parts.length - 1]}`;
+        }
+
+        // Helper para abreviar posições/cargos de forma sintética
+        function abbreviatePosition(roleText) {
+            const raw = String(roleText || 'Cargo').trim();
+            if (!raw) return 'Cargo';
+
+            const replacements = [
+                [/\bVICE[-\s]?PRESIDENTE\b/gi, 'VP'],
+                [/\bPRESIDENTE\b/gi, 'Pres.'],
+                [/\bSUPERINTENDENTE\b/gi, 'Sup.'],
+                [/\bDIRETOR(?:A)?\s+EXECUTIV[OA]\b/gi, 'Dir. Exec.'],
+                [/\bDIRETOR(?:A)?\b/gi, 'Dir.'],
+                [/\bGERENTE\s+GERAL\b/gi, 'Ger. Geral'],
+                [/\bGERENTE\b/gi, 'Ger.'],
+                [/\bCOORDENADOR(?:A)?\b/gi, 'Coord.'],
+                [/\bSUPERVISOR(?:A)?\b/gi, 'Supv.'],
+                [/\bESPECIALISTA\b/gi, 'Espec.'],
+                [/\bANALISTA\b/gi, 'Anal.'],
+                [/\bASSISTENTE\b/gi, 'Assist.'],
+                [/\bAUXILIAR\b/gi, 'Aux.'],
+                [/\bTECNIC[OA]\b/gi, 'Téc.'],
+                [/\bESTAGIARI[OA]\b/gi, 'Estag.'],
+                [/\bAPRENDIZ\b/gi, 'Aprend.'],
+                [/\bADMINISTRATIV[OA]\b/gi, 'Adm.'],
+                [/\bOPERACIONAL\b/gi, 'Oper.'],
+                [/\bFINANCEIR[OA]\b/gi, 'Fin.'],
+                [/\bCOMERCIAL\b/gi, 'Comerc.'],
+                [/\bINDUSTRIAL\b/gi, 'Ind.'],
+                [/\bAGRICOLA\b/gi, 'Agríc.'],
+                [/\bLOGISTIC[OA]\b/gi, 'Log.'],
+                [/\bMANUTENCAO\b/gi, 'Manut.'],
+                [/\bPLANEJAMENTO\b/gi, 'Plan.'],
+                [/\bDESENVOLVIMENTO\b/gi, 'Desenv.'],
+                [/\bRELACIONAMENTO\b/gi, 'Relac.'],
+                [/\bCORPORATIV[OA]\b/gi, 'Corp.'],
+                [/\bDEPARTAMENTO\b/gi, 'Depto.'],
+                [/\bCONSELHO\b/gi, 'Cons.'],
+                [/\bSENIOR\b/gi, 'Sr.'],
+                [/\bPLENO\b/gi, 'Pl.'],
+                [/\bJUNIOR\b/gi, 'Jr.']
+            ];
+
+            let abbr = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            for (const [pattern, shortForm] of replacements) {
+                abbr = abbr.replace(pattern, shortForm);
+            }
+            return abbr.replace(/\s+/g, ' ').trim();
         }
 
         // TROCA DE ABAS
@@ -403,10 +548,105 @@
         window.addEventListener('click', function(e) {
             const panel = document.getElementById('levelDropdownPanel');
             const btn = document.getElementById('levelDropdownBtn');
-            if (!panel.contains(e.target) && !btn.contains(e.target)) {
+            if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
                 panel.classList.add('hidden');
             }
+
+            const peopleWrapper = document.getElementById('peopleMultiSelectWrapper');
+            const peoplePanel = document.getElementById('peopleDropdownPanel');
+            if (peopleWrapper && peoplePanel && !peopleWrapper.contains(e.target)) {
+                peoplePanel.classList.add('hidden');
+            }
         });
+
+        function togglePeopleDropdown() {
+            const panel = document.getElementById('peopleDropdownPanel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderPeopleCheckboxList();
+            }
+        }
+
+        function updatePeopleButtonText() {
+            const btnText = document.getElementById('peopleBtnText');
+            if (!btnText) return;
+            if (selectedPeople.size === 0) {
+                btnText.innerText = 'Pessoas / Dir. (Todos)';
+            } else if (selectedPeople.size === 1) {
+                const onlyId = Array.from(selectedPeople)[0];
+                const person = globalData.find(r => String(r.NUMCAD || '').trim() === onlyId);
+                btnText.innerText = person ? getFirstAndLastName(person.NOME) : '1 selecionado';
+            } else {
+                btnText.innerText = `${selectedPeople.size} selecionados`;
+            }
+        }
+
+        function togglePersonSelection(numcad) {
+            const id = String(numcad).trim();
+            if (selectedPeople.has(id)) {
+                selectedPeople.delete(id);
+            } else {
+                selectedPeople.add(id);
+            }
+            updatePeopleButtonText();
+            applyAllFilters();
+        }
+
+        function clearSelectedPeople() {
+            selectedPeople.clear();
+            updatePeopleButtonText();
+            renderPeopleCheckboxList();
+            applyAllFilters();
+        }
+
+        function renderPeopleCheckboxList() {
+            const listContainer = document.getElementById('peopleCheckboxesList');
+            const filterInput = document.getElementById('peopleSearchFilter');
+            if (!listContainer) return;
+
+            const query = (filterInput ? filterInput.value : '').toLowerCase().trim();
+            const uniquePeople = [];
+            const seen = new Set();
+
+            globalData.forEach(row => {
+                const id = String(row.NUMCAD || '').trim();
+                const name = String(row.NOME || '').trim();
+                if (!id || !name || seen.has(id)) return;
+                seen.add(id);
+                uniquePeople.push({
+                    numcad: id,
+                    nome: name,
+                    cargo: String(row.CARGO || '').trim()
+                });
+            });
+
+            uniquePeople.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            const filtered = uniquePeople.filter(p =>
+                !query ||
+                p.nome.toLowerCase().includes(query) ||
+                p.cargo.toLowerCase().includes(query) ||
+                p.numcad.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">Nenhuma pessoa encontrada.</p>`;
+                return;
+            }
+
+            listContainer.innerHTML = filtered.map(p => {
+                const checked = selectedPeople.has(p.numcad) ? 'checked' : '';
+                return `
+                    <label class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-left">
+                        <input type="checkbox" ${checked} onchange="togglePersonSelection('${p.numcad}')" class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500">
+                        <div class="min-w-0 flex-1 leading-tight">
+                            <div class="text-[11px] font-semibold text-slate-800 truncate" title="${p.nome}">${p.nome}</div>
+                            <div class="text-[9.5px] text-slate-500 truncate" title="${p.cargo}">${abbreviatePosition(p.cargo)} • #${p.numcad}</div>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+        }
 
         function toggleLevelDropdown() {
             const panel = document.getElementById('levelDropdownPanel');
@@ -476,13 +716,14 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    // Inicializa ordem explícita para permitir reordenação manual livre
                     globalData = results.data.map((row, idx) => ({
                         ...row,
                         _sortOrder: idx
                     }));
                     collapsedNodes.clear();
-                    populateAutocomplete();
+                    selectedPeople.clear();
+                    updatePeopleButtonText();
+                    renderPeopleCheckboxList();
                     populateSubProcessFilter();
                     initApp();
                 }
@@ -507,7 +748,6 @@
 
             const parentId = String(targetItem.NUMLID || '').trim();
 
-            // Pega todos os irmãos (mesmo NUMLID) na ordem atual
             const siblings = globalData
                 .filter(i => String(i.NUMCAD || '').trim() && String(i.NUMLID || '').trim() === parentId)
                 .sort((a, b) => a._sortOrder - b._sortOrder);
@@ -517,7 +757,6 @@
 
             if (currentIndex === -1 || swapIndex < 0 || swapIndex >= siblings.length) return;
 
-            // Troca a posição no array de irmãos e reatribui os valores de _sortOrder
             const temp = siblings[currentIndex];
             siblings[currentIndex] = siblings[swapIndex];
             siblings[swapIndex] = temp;
@@ -527,7 +766,6 @@
                 sib._sortOrder = sortedOrders[idx];
             });
 
-            // Força o seletor de ordenação para "Ordem Padrão / Manual" para refletir o ajuste imediatamente
             document.getElementById('sortBy').value = 'default';
             applyAllFilters();
         }
@@ -600,7 +838,6 @@
             const targetParent = String(targetItem.NUMLID || '').trim();
 
             if (sourceParent === targetParent) {
-                // Mesmo líder: reordena entre irmãos colocando na posição do alvo
                 const siblings = globalData
                     .filter(i => String(i.NUMCAD || '').trim() && String(i.NUMLID || '').trim() === targetParent)
                     .sort((a, b) => a._sortOrder - b._sortOrder);
@@ -618,7 +855,6 @@
                     });
                 }
             } else {
-                // Líderes diferentes: vincula o card arrastado como subordinado direto do card alvo
                 sourceItem.NUMLID = targetId;
                 const maxOrder = globalData.reduce((max, item) => Math.max(max, item._sortOrder || 0), 0);
                 sourceItem._sortOrder = maxOrder + 1;
@@ -715,7 +951,7 @@
             }
 
             closeModal();
-            populateAutocomplete();
+            renderPeopleCheckboxList();
             populateSubProcessFilter();
             initApp();
         }
@@ -723,27 +959,12 @@
         function deleteNode(numcad) {
             if (confirm("Deseja realmente remover este elemento da árvore hierárquica?")) {
                 globalData = globalData.filter(i => String(i.NUMCAD).trim() !== String(numcad).trim());
-                populateAutocomplete();
+                selectedPeople.delete(String(numcad).trim());
+                updatePeopleButtonText();
+                renderPeopleCheckboxList();
                 populateSubProcessFilter();
                 initApp();
             }
-        }
-
-        function populateAutocomplete() {
-            const dataList = document.getElementById('employeesList');
-            dataList.innerHTML = '';
-            
-            const sortedNames = globalData
-                .filter(row => row.NOME)
-                .map(row => ({ nome: row.NOME.trim(), numcad: row.NUMCAD || '', cargo: row.CARGO || '' }))
-                .sort((a, b) => a.nome.localeCompare(b.nome));
-
-            sortedNames.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.nome;
-                option.label = `#${item.numcad} - ${item.cargo}`;
-                dataList.appendChild(option);
-            });
         }
 
         function populateSubProcessFilter() {
@@ -876,7 +1097,6 @@
         function applyAllFilters() {
             if (globalData.length === 0) return;
             ensureSortOrders();
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const subProcessFilter = document.getElementById('subProcessFilter').value;
             const sortBy = document.getElementById('sortBy').value;
             const layoutFormat = document.getElementById('layoutFormat').value;
@@ -959,14 +1179,12 @@
                 roots = applyMultipleLevelFilter(roots);
             }
 
-            if (searchTerm) {
-                let matchedNode = null;
-                Object.values(map).forEach(n => {
-                    if (n.nome.toLowerCase().includes(searchTerm) || n.numcad.toLowerCase().includes(searchTerm)) {
-                        matchedNode = n;
-                    }
-                });
-                roots = matchedNode ? [matchedNode] : [];
+            // Seleção múltipla de pessoas / diretorias
+            if (selectedPeople.size > 0) {
+                const pickedNodes = Array.from(selectedPeople)
+                    .map(id => map[id])
+                    .filter(Boolean);
+                roots = pickedNodes;
             }
 
             function pruneCollapsed(nodes) {
@@ -986,7 +1204,6 @@
 
             currentFilteredRoots = pruneCollapsed(roots);
 
-            // Atualiza ambas as telas com base nos dados filtrados
             renderTree(currentFilteredRoots, layoutFormat);
             renderEditorTree(currentFilteredRoots, layoutFormat);
         }
@@ -1004,15 +1221,113 @@
             };
         }
 
+        // CARD SINTÉTICO PRÓXIMO À GRADE COMPACTA PARA O MODO MULTI-DIRETORIAS
+        function renderExecutiveBlockCard(node, isEditor = false, isVerticalCompact = false) {
+            const styles = getLevelStyles(node.level);
+            const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+            const showPhotos = document.getElementById('photoVisibilityFilter').value === 'yes';
+            const isCollapsed = collapsedNodes.has(node.numcad);
+            const hasTeam = node.hasOriginalChildren || node.hcIndirect > 0;
+
+            const shortName = getFirstAndLastName(node.nome);
+            const shortRole = abbreviatePosition(node.cargo);
+
+            const hasFoto = node.foto && node.foto.length > 5;
+            const fotoHTML = showPhotos
+                ? (hasFoto
+                    ? `<img src="${node.foto}" class="w-5 h-5 rounded-full object-cover border ${styles.ring} shrink-0 pointer-events-none" crossorigin="anonymous">`
+                    : `<div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 shrink-0 pointer-events-none"><i data-lucide="user" class="w-3 h-3"></i></div>`)
+                : '';
+
+            const canMovePrev = node.siblingIndex > 0;
+            const canMoveNext = node.siblingIndex < (node.siblingTotal - 1);
+
+            const actionButtonsHTML = isEditor ? `
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-slate-900/95 backdrop-blur text-white px-2 py-0.5 rounded-full shadow-lg z-30">
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', -1)" ${!canMovePrev ? 'disabled' : ''} class="p-0.5 ${canMovePrev ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Esquerda"><i data-lucide="arrow-left" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); moveNodeOrder('${node.numcad}', 1)" ${!canMoveNext ? 'disabled' : ''} class="p-0.5 ${canMoveNext ? 'hover:text-amber-400' : 'opacity-30 cursor-not-allowed'} transition" title="Mover para Direita"><i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); openEditModal('${node.numcad}')" class="p-0.5 hover:text-blue-400 transition" title="Editar Caixa"><i data-lucide="edit-2" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); openCreateModal('${node.numcad}')" class="p-0.5 hover:text-emerald-400 transition" title="Incluir Subordinado"><i data-lucide="plus" class="w-2.5 h-2.5"></i></button>
+                    <button onclick="event.stopPropagation(); deleteNode('${node.numcad}')" class="p-0.5 hover:text-red-400 transition" title="Excluir Caixa"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i></button>
+                </div>` : '';
+
+            const dragAttributes = isEditor ? `
+                draggable="true"
+                ondragstart="handleCardDragStart(event, '${node.numcad}')"
+                ondragend="handleCardDragEnd(event)"
+                ondragover="handleCardDragOver(event, '${node.numcad}')"
+                ondragleave="handleCardDragLeave(event)"
+                ondrop="handleCardDrop(event, '${node.numcad}')"
+            ` : '';
+
+            const editorCursorClass = isEditor ? 'editor-card-draggable' : 'cursor-pointer';
+
+            const cardBg = isDarkMode
+                ? 'bg-slate-800 border-slate-700 text-slate-100'
+                : 'bg-white border-slate-200 text-slate-800';
+
+            const hcBadge = showHC && hasTeam
+                ? `<span class="text-[7.5px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 shrink-0" title="Liderados">${isCollapsed ? `+${node.hcIndirect}` : node.hcDirect}</span>`
+                : '';
+
+            const widthClass = isVerticalCompact ? 'w-36' : 'w-32';
+
+            return `
+                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" title="${node.nome} — ${node.cargo} (L${node.level})" class="relative inline-flex flex-col justify-between ${cardBg} border rounded-lg px-2 py-1.5 ${widthClass} min-h-[46px] text-left shadow-sm hover:border-emerald-500 transition-all ${editorCursorClass} group">
+                    ${actionButtonsHTML}
+                    <div class="flex items-start justify-between gap-1 leading-tight">
+                        <div class="flex items-center gap-1 min-w-0 flex-1">
+                            ${fotoHTML}
+                            <span class="text-[8.5px] font-extrabold uppercase leading-tight break-words text-slate-800 dark:text-slate-100" title="${node.cargo}">${shortRole}</span>
+                        </div>
+                        <span class="text-[6.5px] font-bold px-1 py-0.5 rounded ${styles.badge} shrink-0 leading-none">L${node.level}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-1 mt-1 leading-none">
+                        <span class="text-[8px] font-semibold leading-tight break-words text-emerald-700 dark:text-emerald-400" title="${node.nome}">${shortName}</span>
+                        ${hcBadge}
+                    </div>
+                </div>`;
+        }
+
+        // Ordena caixas dos níveis mais baixos (L4+) na vertical, distribuindo em colunas compactas quando há muitas posições
+        function renderLowerLevelsVerticalStack(children, layoutFormat, isEditor = false) {
+            const maxCols = 3;
+            const numCols = Math.min(maxCols, Math.max(1, Math.ceil(children.length / 2)));
+            const columns = Array.from({ length: numCols }, () => []);
+
+            children.forEach((child, idx) => {
+                columns[idx % numCols].push(child);
+            });
+
+            function renderVerticalBranch(node) {
+                const isCollapsed = collapsedNodes.has(node.numcad);
+                const hasSub = node.children && node.children.length > 0 && !isCollapsed;
+                let subHTML = '';
+                if (hasSub) {
+                    subHTML = `<div class="exec-vertical-sublist">${node.children.map(c => renderVerticalBranch(c)).join('')}</div>`;
+                }
+                return `<div class="exec-vertical-branch">${renderExecutiveBlockCard(node, isEditor, true)}${subHTML}</div>`;
+            }
+
+            return `
+                <div class="exec-lower-vertical-grid">
+                    ${columns.map(col => `<div class="exec-vertical-column">${col.map(n => renderVerticalBranch(n)).join('')}</div>`).join('')}
+                </div>
+            `;
+        }
+
         // RENDERIZAÇÃO DAS CAIXAS DO ORGANOGRAMA COM UNIDADE, NÍVEL E CONTROLES DO EDITOR
         function renderPillCard(node, isCompactMode = false, isEditor = false) {
             const styles = getLevelStyles(node.level);
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+            const showPhotos = document.getElementById('photoVisibilityFilter').value === 'yes';
 
             const hasFoto = node.foto && node.foto.length > 5;
-            const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${styles.ring} shadow shrink-0 pointer-events-none" crossorigin="anonymous">`
-                : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 pointer-events-none"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+            const fotoHTML = showPhotos
+                ? (hasFoto 
+                    ? `<img src="${node.foto}" class="w-11 h-11 rounded-full object-cover border-2 ${styles.ring} shadow shrink-0 pointer-events-none" crossorigin="anonymous">`
+                    : `<div class="w-11 h-11 rounded-full bg-slate-200 border-2 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 pointer-events-none"><i data-lucide="user" class="w-5 h-5"></i></div>`)
+                : '';
 
             const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800';
             const isCollapsed = collapsedNodes.has(node.numcad);
@@ -1054,20 +1369,32 @@
 
             const editorCursorClass = isEditor ? 'editor-card-draggable' : 'cursor-pointer';
             const cardWidth = isCompactMode ? 'w-64 min-h-[86px]' : 'w-72 min-h-[90px]';
+            const cardPaddingLeft = showPhotos ? 'pl-2.5' : 'pl-3.5';
+            const contentMarginLeft = showPhotos ? 'ml-3' : 'ml-0';
             const unidadeText = node.unidade ? `UN: ${node.unidade}` : 'S/U';
             const hcHTML = showHC ? `<span>•</span><span class="text-emerald-600 font-bold" title="HC Direto / Indireto">Dir: ${node.hcDirect} | Ind: ${node.hcIndirect}</span>` : '';
             const nivelTagHTML = node.nivel ? `<span class="bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Nível CSV">${node.nivel}</span>` : '';
 
+            const shortName = getFirstAndLastName(node.nome);
+            const titleAndSubtitleHTML = showPhotos
+                ? `
+                    <h3 class="text-xs font-bold leading-tight break-words text-slate-800 dark:text-white" title="${node.nome}">${node.nome}</h3>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5 break-words" title="${node.cargo}">${node.cargo}</p>
+                `
+                : `
+                    <h3 class="text-xs font-extrabold leading-tight break-words text-slate-800 dark:text-white uppercase tracking-tight" title="${node.cargo}">${node.cargo}</h3>
+                    <p class="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold leading-tight mt-0.5 break-words" title="${node.nome}">${shortName}</p>
+                `;
+
             return `
-                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl pl-2.5 pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all ${editorCursorClass} group">
+                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex items-center ${cardBg} border rounded-2xl ${cardPaddingLeft} pr-4 py-3 shadow-md ${cardWidth} hover:shadow-xl hover:border-emerald-500 transition-all ${editorCursorClass} group">
                     ${actionButtonsHTML}
                     <span class="absolute -top-2 right-4 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${styles.badge} shadow-sm">
                         L${node.level}
                     </span>
                     ${fotoHTML}
-                    <div class="ml-3 text-left w-full min-w-0 pr-2">
-                        <h3 class="text-xs font-bold leading-tight break-words text-slate-800 dark:text-white" title="${node.nome}">${node.nome}</h3>
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5 break-words" title="${node.cargo}">${node.cargo}</p>
+                    <div class="${contentMarginLeft} text-left w-full min-w-0 pr-2">
+                        ${titleAndSubtitleHTML}
                         
                         <div class="flex items-center gap-1 mt-1.5 text-[9px] text-slate-400 font-mono flex-wrap">
                             <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded leading-none" title="Subprocesso">${node.subprocesso}</span>
@@ -1096,7 +1423,6 @@
             }
             operacionalNodes.forEach(collectCargos);
 
-            // Ordena os cargos do maior HC para o menor
             const sortedCargos = Object.entries(cargoCounts).sort((a, b) => b[1] - a[1]);
 
             let summaryHTML = '<div class="space-y-1.5 mt-1.5 border-t border-slate-200 dark:border-slate-700 pt-1.5">';
@@ -1128,18 +1454,21 @@
         function renderCircleCard(node, isEditor = false) {
             const styles = getLevelStyles(node.level);
             const showHC = document.getElementById('hcVisibilityFilter').value === 'show';
+            const showPhotos = document.getElementById('photoVisibilityFilter').value === 'yes';
             const isCollapsed = collapsedNodes.has(node.numcad);
             const hasTeam = node.hasOriginalChildren || node.hcIndirect > 0;
 
             const hasFoto = node.foto && node.foto.length > 5;
-            const fotoHTML = hasFoto 
-                ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto pointer-events-none" crossorigin="anonymous">`
-                : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto pointer-events-none"><i data-lucide="user" class="w-7 h-7"></i></div>`;
+            const fotoHTML = showPhotos
+                ? (hasFoto 
+                    ? `<img src="${node.foto}" class="w-14 h-14 rounded-full object-cover border-4 ${styles.ring} shadow-md shrink-0 mx-auto pointer-events-none" crossorigin="anonymous">`
+                    : `<div class="w-14 h-14 rounded-full bg-slate-200 border-4 ${styles.ring} flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mx-auto pointer-events-none"><i data-lucide="user" class="w-7 h-7"></i></div>`)
+                : `<div class="h-5"></div>`;
 
             const textColor = isDarkMode ? 'text-slate-200' : 'text-slate-700';
 
             const levelBadgeHTML = `
-                <span class="absolute -top-1 left-0 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${styles.badge} shadow-sm z-10">
+                <span class="absolute -top-1 ${showPhotos ? 'left-0' : 'left-1/2 -translate-x-1/2'} text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${styles.badge} shadow-sm z-10">
                     L${node.level}
                 </span>`;
 
@@ -1180,41 +1509,59 @@
             ` : '';
 
             const editorCursorClass = isEditor ? 'editor-card-draggable' : 'cursor-pointer';
+            const cardContainerClass = showPhotos
+                ? `relative inline-flex flex-col items-center w-28 text-center ${editorCursorClass} group p-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition`
+                : `relative inline-flex flex-col items-center w-36 text-center ${editorCursorClass} group p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-500 transition`;
+
+            const shortName = getFirstAndLastName(node.nome);
+            const circleTextHTML = showPhotos
+                ? `
+                    <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1 block leading-tight" title="${node.nome}">${node.nome.split(' ')[0]}</span>
+                    <span class="text-[8px] text-slate-500 dark:text-slate-400 break-words w-full block leading-tight mt-0.5" title="${node.cargo}">${node.cargo}</span>
+                `
+                : `
+                    <span class="text-[10px] font-extrabold ${textColor} uppercase break-words w-full mt-1 block leading-tight" title="${node.cargo}">${node.cargo}</span>
+                    <span class="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold break-words w-full block leading-tight mt-0.5" title="${node.nome}">${shortName}</span>
+                `;
 
             return `
-                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="relative inline-flex flex-col items-center w-28 text-center ${editorCursorClass} group p-1 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition">
+                <div ${dragAttributes} onclick="toggleCollapse('${node.numcad}')" class="${cardContainerClass}">
                     ${actionButtonsHTML}
-                    <div class="relative mb-1">
+                    <div class="relative mb-1 w-full">
                         ${levelBadgeHTML}
                         ${fotoHTML}
                         ${collapsedBadgeHTML}
                     </div>
-                    <span class="text-[10px] font-bold ${textColor} break-words w-full mt-1 block leading-tight" title="${node.nome}">${node.nome.split(' ')[0]}</span>
-                    <span class="text-[8px] text-slate-500 dark:text-slate-400 break-words w-full block leading-tight mt-0.5" title="${node.cargo}">${node.cargo}</span>
+                    ${circleTextHTML}
                     ${hcTextHTML}
-                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded mt-0.5 break-words w-full truncate" title="${node.subprocesso}">${node.subprocesso}</span>
+                    <span class="text-[7px] text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mt-0.5 break-words w-full truncate" title="${node.subprocesso}">${node.subprocesso}</span>
                 </div>`;
+        }
+
+        function renderNodeCardByLayout(node, layoutFormat, isEditor = false) {
+            if (layoutFormat === 'executive-grid') {
+                return renderExecutiveBlockCard(node, isEditor, false);
+            }
+            const isVisualLeaf = node.children.length === 0;
+            const useCircle = layoutFormat === 'compact' && isVisualLeaf;
+            const isCompact = layoutFormat === 'horizontal-compact';
+            return useCircle ? renderCircleCard(node, isEditor) : renderPillCard(node, isCompact, isEditor);
         }
 
         function renderNodeHTML(node, layoutFormat, isEditor = false) {
             const isCollapsed = collapsedNodes.has(node.numcad);
-            const isVisualLeaf = node.children.length === 0;
-            const useCircle = layoutFormat === 'compact' && isVisualLeaf;
-            const isCompact = layoutFormat === 'horizontal-compact';
+            const isExecutive = layoutFormat === 'executive-grid';
 
-            let html = `<li>${useCircle ? renderCircleCard(node, isEditor) : renderPillCard(node, isCompact, isEditor)}`;
+            let html = `<li>${renderNodeCardByLayout(node, layoutFormat, isEditor)}`;
 
             if (node.children.length > 0 && !isCollapsed) {
-                if (!isEditor) {
-                    // Separa os subordinados diretos entre NIVEL === 'OPERACIONAL' e os demais níveis
+                if (!isEditor && !isExecutive) {
                     const operacionalChildren = node.children.filter(c => isOperacional(c));
                     const nonOperacionalChildren = node.children.filter(c => !isOperacional(c));
 
                     if (operacionalChildren.length > 0 && nonOperacionalChildren.length === 0) {
-                        // Todos os subordinados diretos deste líder são OPERACIONAL: agrupa por cargo em um único card
                         html += `<ul><li>${renderCargoSummaryCard(operacionalChildren)}</li></ul>`;
                     } else {
-                        // Possui subordinados não-operacionais (e eventualmente operacionais misturados sob o mesmo líder)
                         const allNonOpAreLeaves = nonOperacionalChildren.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
 
                         if (layoutFormat === 'compact' && allNonOpAreLeaves && operacionalChildren.length === 0) {
@@ -1234,8 +1581,10 @@
                             html += '</ul>';
                         }
                     }
+                } else if (isExecutive && !isEditor && node.children.some(c => c.level >= 4)) {
+                    // Nos níveis mais baixos (L4+), ordena as caixas na vertical dentro do bloco do líder
+                    html += `<ul><li>${renderLowerLevelsVerticalStack(node.children, layoutFormat, isEditor)}</li></ul>`;
                 } else {
-                    // Na aba do Editor, exibe todas as caixas individualmente para permitir movimentação e edição livre
                     const allChildrenAreVisualLeaves = node.children.every(c => c.children.length === 0 || collapsedNodes.has(c.numcad));
 
                     if (layoutFormat === 'compact' && allChildrenAreVisualLeaves) {
@@ -1257,6 +1606,18 @@
             return html;
         }
 
+        function applyLayoutClass(container, layoutFormat) {
+            if (layoutFormat === 'horizontal') {
+                container.className = 'tf-tree layout-horizontal';
+            } else if (layoutFormat === 'horizontal-compact') {
+                container.className = 'tf-tree layout-horizontal-compact';
+            } else if (layoutFormat === 'executive-grid') {
+                container.className = 'tf-tree layout-executive-grid';
+            } else {
+                container.className = 'tf-tree layout-vertical';
+            }
+        }
+
         function renderTree(roots, layoutFormat) {
             const container = document.getElementById('tree-root');
             if (roots.length === 0) {
@@ -1264,23 +1625,23 @@
                 return;
             }
 
-            if (layoutFormat === 'horizontal') {
-                container.className = 'tf-tree layout-horizontal';
-            } else if (layoutFormat === 'horizontal-compact') {
-                container.className = 'tf-tree layout-horizontal-compact';
-            } else {
-                container.className = 'tf-tree layout-vertical';
-            }
-
-            const operacionalRoots = roots.filter(r => isOperacional(r));
-            const nonOperacionalRoots = roots.filter(r => !isOperacional(r));
+            applyLayoutClass(container, layoutFormat);
 
             let html = '<ul>';
-            nonOperacionalRoots.forEach(root => {
-                html += renderNodeHTML(root, layoutFormat, false);
-            });
-            if (operacionalRoots.length > 0) {
-                html += `<li>${renderCargoSummaryCard(operacionalRoots)}</li>`;
+            if (layoutFormat === 'executive-grid') {
+                roots.forEach(root => {
+                    html += renderNodeHTML(root, layoutFormat, false);
+                });
+            } else {
+                const operacionalRoots = roots.filter(r => isOperacional(r));
+                const nonOperacionalRoots = roots.filter(r => !isOperacional(r));
+
+                nonOperacionalRoots.forEach(root => {
+                    html += renderNodeHTML(root, layoutFormat, false);
+                });
+                if (operacionalRoots.length > 0) {
+                    html += `<li>${renderCargoSummaryCard(operacionalRoots)}</li>`;
+                }
             }
             html += '</ul>';
 
@@ -1295,13 +1656,7 @@
                 return;
             }
 
-            if (layoutFormat === 'horizontal') {
-                container.className = 'tf-tree layout-horizontal';
-            } else if (layoutFormat === 'horizontal-compact') {
-                container.className = 'tf-tree layout-horizontal-compact';
-            } else {
-                container.className = 'tf-tree layout-vertical';
-            }
+            applyLayoutClass(container, layoutFormat);
 
             let html = '<ul>';
             roots.forEach(root => {
@@ -1452,7 +1807,6 @@
         document.querySelectorAll('.viewport-drag').forEach(vp => {
             vp.addEventListener('contextmenu', (e) => e.preventDefault());
             vp.addEventListener('mousedown', (e) => {
-                // Evita iniciar o pan da tela caso o usuário esteja clicando/arrastando uma caixa no Editor
                 if (e.target.closest('.editor-card-draggable')) return;
 
                 if (e.button === 0 || e.button === 2) {
